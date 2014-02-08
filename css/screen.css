@@ -4,13 +4,23 @@
 	padding: 0;
 }
 
+.site {
+    background-color: white;
+	width: 800px;
+	margin-top: 1em;
+	margin-bottom: 5em;
+	margin-left: auto;
+	margin-right: auto;
+	border: 1px solid;
+}
+
 html, body {
 	height: 100%;
 }
 
 body {
-	background-color: white;
-	font: 13.34px helvetica, arial, clean, sans-serif;
+	background-color: #282828;
+	font: 15px georgia, serif;
 	*font-size: small;
 	text-align: center;
 }
@@ -34,6 +44,7 @@ table {
 
 .site .footer .contact {
 	float: left;
+	margin-left: 3em;
 	margin-right: 3em;
 }
 
@@ -49,3 +60,15 @@ table {
     margin-bottom: 4em;
     text-align: left;
 }
+
+.post_content ul {
+    margin-left: 2em;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.post_content p {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
