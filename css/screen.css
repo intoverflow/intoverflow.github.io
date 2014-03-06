@@ -11,7 +11,7 @@
 	margin-bottom: 5em;
 	margin-left: auto;
 	margin-right: auto;
-	border: 1px solid;
+	border: 0px solid;
 }
 
 html, body {
@@ -19,7 +19,7 @@ html, body {
 }
 
 body {
-	background-color: #282828;
+	background-color: white;
 	font: 15px georgia, serif;
 	*font-size: small;
 	text-align: center;
