@@ -1,3 +1,4 @@
+markdown: kramdown
 url: http://ninj4.net
 permalink: date
 exclude: ['CNAME', '.gitignore', 'Gemfile', 'Gemfile.lock', 'README.md']
