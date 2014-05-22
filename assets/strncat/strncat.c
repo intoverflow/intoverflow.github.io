@@ -1,3 +1,4 @@
+#define char int
 typedef unsigned int size_t;
 
 size_t strlen(const char *s) {

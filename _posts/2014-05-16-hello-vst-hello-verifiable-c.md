@@ -53,6 +53,10 @@ Download link for CompCert 2.1: [http://compcert.inria.fr/release/compcert-2.1.t
 
 Download link for VST 1.3: [http://vst.cs.princeton.edu/download/vst-1.3.tgz](http://vst.cs.princeton.edu/download/vst-1.3.tgz), or, if that's stale, you can get a copy from me: [http://intoverflow.github.io/assets/vst-1.3.tgz](http://intoverflow.github.io/assets/vst-1.3.tgz).
 
+Alternatively, perhaps you want to use a bleeding-edge VST. At time of writing, that'd be SVN version 6491, which you'd need to get by mirroring [https://svn.princeton.edu/appel/vst/](https://svn.princeton.edu/appel/vst/). In the case of version 6491, you'd want to use CompCert 2.3pl2: [http://compcert.inria.fr/release/compcert-2.3pl2.tgz](http://compcert.inria.fr/release/compcert-2.3pl2.tgz), or, if that's stale, you can get a copy from me: [http://intoverflow.github.io/assets/compcert-2.3pl2.tgz](http://intoverflow.github.io/assets/compcert-2.3pl2.tgz).
+
+Here's how you'd get started using VST Version 1.3 with CompCert 2.1:
+
 <div style="background-color: #D6EBFF;">
 <pre>
 <i>[tcarstens@weibel ~]$</i> <b>mkdir verifiable-c</b>
@@ -65,6 +69,31 @@ Download link for VST 1.3: [http://vst.cs.princeton.edu/download/vst-1.3.tgz](ht
 <i>[tcarstens@weibel verifiable-c]$</i> <b>sha256sum *</b>
 bcb507d998a956c96672bd0f88a2bd792f08f564985675748902420b068862eb  compcert-2.1.tgz
 5dbe2f9aeb200959850c52bed14ce533f9ed548a9fbcbd7f8644813d5c56bc43  vst-1.3.tgz
+<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf compcert-2.1.tgz </b>
+<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf vst-1.3.tgz </b>
+<i>[tcarstens@weibel verifiable-c]$</i> <b>ls -F</b>
+compcert-2.1/  compcert-2.1.tgz  vst/  vst-1.3.tgz
+<i>[tcarstens@weibel verifiable-c]$</i>
+</pre>
+</div>
+
+Here's how you'd get started using VST from SVN with CompCert 2.3. The <code>wget</code> step for cloning the VST SVN repository takes a while; if you just want to download a tarball of it from me, here's a link for SVN version 6491: [http://intoverflow.github.io/assets/vst-svn6491.tgz](http://intoverflow.github.io/assets/vst-svn6491.tgz).
+
+<div style="background-color: #D6EBFF;">
+<pre style="white-space: pre-wrap;">
+<i>[tcarstens@weibel ~]$</i> <b>mkdir verifiable-c</b>
+<i>[tcarstens@weibel ~]$</i> <b>cd verifiable-c/</b>
+<i>[tcarstens@weibel verifiable-c]$</i> <b>wget --quiet "http://compcert.inria.fr/release/compcert-2.3pl2.tgz"</b>
+<i>[tcarstens@weibel verifiable-c]$</i> <b>wget -np -e robots=off -nH --cut-dirs=1 -r --quiet https://svn.princeton.edu/appel/vst/</b>
+<i>[tcarstens@weibel verifiable-c]$</i> <b>md5sum *</b>
+f97700e91163e6fbdb645721e2c1350f  compcert-2.3pl2.tgz
+md5sum: vst: Is a directory
+<i>[tcarstens@weibel verifiable-c]$</i> <b>sha256sum *</b>
+a8626962e1aa0c7ac566d799c4b4c588a2bbc9e47fd5a2bfae8152438caf04b3  compcert-2.3pl2.tgz
+sha256sum: vst: Is a directory
+<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf compcert-2.3pl2.tgz </b>
+<i>[tcarstens@weibel verifiable-c]$</i> <b>ls -F</b>
+compcert-2.3pl2/  compcert-2.3pl2.tgz  vst/
 <i>[tcarstens@weibel verifiable-c]$</i>
 </pre>
 </div>
@@ -99,15 +128,17 @@ compiled on Mar 25 2014 01:27:43 with OCaml 4.01.0
 </pre>
 </div>
 
-Very good, let's build CompCert, noting my <code><b>toolprefix</b></code> setting (if I wanted to use gcc and not arm-none-eabi-gcc, I would have omitted the toolprefix switch):
+Very good, let's build CompCert. I'm building CompCert 2.3pl2, but the process is *identical* for 2.1. Note my <code><b>toolprefix</b></code> setting (if I wanted to use gcc and not arm-none-eabi-gcc, I would have omitted the toolprefix switch):
 
 <div style="background-color: #D6EBFF;">
 <pre style="white-space: pre-wrap;">
-<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf compcert-2.1.tgz </b>
-<i>[tcarstens@weibel verifiable-c]$</i> <b>pushd compcert-2.1</b>
-~/verifiable-c/compcert-2.1 ~/verifiable-c
-<i>[tcarstens@weibel compcert-2.1]$</i> <b>./configure arm-eabi -toolprefix arm-none-eabi-</b>
+<i>[tcarstens@weibel verifiable-c]$</i> <b>pushd compcert-2.3pl2</b>
+~/verifiable-c/compcert-2.3 ~/verifiable-c
+<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>./configure arm-eabi -toolprefix arm-none-eabi- -no-runtime-lib</b>
 Testing assembler support for CFI directives... no
+Testing Coq... version 8.4pl3 -- good!
+Testing OCaml... version 4.01.0 -- good!
+Testing Menhir... version 20140422 -- good!
 
 CompCert configuration:
     Target architecture........... arm
@@ -121,28 +152,24 @@ CompCert configuration:
     Linker........................ arm-none-eabi-gcc
     Math library.................. -lm
     Binaries installed in......... /usr/local/bin
-    Runtime library provided...... true
+    Runtime library provided...... false
     Library files installed in.... /usr/local/lib/compcert
     cchecklink tool supported..... false
 
 If anything above looks wrong, please edit file ./Makefile.config to correct.
 
-<i>[tcarstens@weibel compcert-2.1]$</i> <b>time make -j 6 clightgen</b>
-COQC lib/Coqlib.v
+<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>time make -j 6 clightgen</b>
 COQC lib/Axioms.v
+COQC lib/Coqlib.v
+ocamlopt -o tools/ndfun str.cmxa tools/ndfun.ml
 COQC flocq/Core/Fcore_Zaux.v
 <i>...(output elided)...</i>
-ocamlbuild -j 2 -no-hygiene -no-links -I lib -I common -I arm/eabi -I arm -I backend -I cfrontend -I driver -I flocq/Core -I flocq/Prop -I flocq/Calc -I flocq/Appli -I exportclight -I extraction -I cparser -I exportclight Clightgen.native \
-        &amp;&amp; rm -f clightgen &amp;&amp; ln -s _build/exportclight/Clightgen.native clightgen
-Finished, 1 target (0 cached) in 00:00:00.
-+ /usr/bin/ocamlyacc cparser/Parser.mly
-2 shift/reduce conflicts.
-Finished, 377 targets (0 cached) in 00:00:05.
+Finished, 441 targets (0 cached) in 00:00:11.
 
-real	10m9.582s
-user	26m55.107s
-sys	0m34.790s
-<i>[tcarstens@weibel compcert-2.1]$</i> <b>./clightgen --help</b>
+real	14m18.279s
+user	37m48.863s
+sys	0m43.087s
+<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>./clightgen --help</b>
 The CompCert Clight generator
 Usage: clightgen [options] &lt;source files>
 Recognized source files:
@@ -168,36 +195,35 @@ Tracing options:
   -dclight       Save generated Clight in &lt;file>.light.c
 General options:
   -v             Print external commands before invoking them
-<i>[tcarstens@weibel compcert-2.1]$</i> <b>popd</b>
+<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>popd</b>
 ~/verifiable-c
 <i>[tcarstens@weibel verifiable-c]$</i>
 </pre>
 </div>
 
-Sweet. Now we can build VST:
+Sweet. Now we can build VST. You'll need to create a <code>vst/CONFIGURE</code> file pointing to your CompCert source directory.
 
 <div style="background-color: #D6EBFF;">
 <pre style="white-space: pre-wrap;">
-<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf vst-1.3.tgz</b>
 <i>[tcarstens@weibel verifiable-c]$</i> <b>pushd vst</b>
 ~/verifiable-c/vst ~/verifiable-c
-<i>[tcarstens@weibel vst]$</i> <b>echo "COMPCERT=../compcert-2.1" > CONFIGURE</b>
+<i>[tcarstens@weibel vst]$</i> <b>echo "COMPCERT=../compcert-2.3pl2" > CONFIGURE</b>
 <i>[tcarstens@weibel vst]$</i> <b>cat CONFIGURE</b>
-COMPCERT=../compcert-2.1
+COMPCERT=../compcert-2.3pl2
 <i>[tcarstens@weibel vst]$</i> <b>time make -j 6</b>
-Makefile:275: .depend: No such file or directory
-coqdep -slash  -I msl -as msl  -I sepcomp -as sepcomp  -I veric -as veric  -I floyd -as floyd  -I progs -as progs    -R ../compcert-2.1 -as compcert msl/Axioms.v msl/Extensionality.v msl/base.v msl/eq_dec.v <i>(output elided)</i>  > .depend
-echo  -I msl -as msl  -I sepcomp -as sepcomp  -I veric -as veric  -I floyd -as floyd  -I progs -as progs    -R ../compcert-2.1 -as compcert >.loadpath
+Makefile:289: .depend: No such file or directory
+coqdep -slash  -I msl -as msl  -I sepcomp -as sepcomp  -I veric -as veric  -I floyd -as floyd  -I progs -as progs  -I sha -as sha  -I linking -as linking  -I compcomp -as compcomp -R ../compcert-2.3pl2 -as compcert msl/Axioms.v msl/Extensionality.v msl/base.v msl/eq_dec.v msl/ageable.v <i>(...output elided...)</i> sha/entail_examples2.v  > .depend
+echo  -I msl -as msl  -I sepcomp -as sepcomp  -I veric -as veric  -I floyd -as floyd  -I progs -as progs  -I sha -as sha  -I linking -as linking  -I compcomp -as compcomp -R ../compcert-2.3pl2 -as compcert >.loadpath
+COQC msl/Axioms.v
 <i>...(output elided)...</i>
 COQC progs/verif_insertion_sort.v
 &lt;W> Grammar extension: in [constr:operconstr] some rule has been masked
 &lt;W> Grammar extension: in [constr:operconstr] some rule has been masked
-&lt;W> Grammar extension: in [constr:operconstr] some rule has been masked
 &lt;W> Grammar extension: in [constr:pattern] some rule has been masked
 
-real	30m2.202s
-user	73m38.990s
-sys	0m35.403s
+real	33m47.188s
+user	85m54.553s
+sys	0m39.500s
 <i>[tcarstens@weibel vst]$</i> <b>coqtop `cat .loadpath` -l progs/verif_sumarray.v</b>
 Welcome to Coq 8.4pl3 (March 2014)
 &lt;W> Grammar extension: in [constr:operconstr] some rule has been masked
@@ -221,9 +247,10 @@ sumarray_spec =
   `(array_at tint sh contents 0 size a0)))
 :funspec)
      : ident * funspec
+
 <i>Coq &lt;</i> <b>Quit.</b>
 <i>[tcarstens@weibel vst]$</i> <b>popd</b>
-~/verifiable-c ~/verifiable-c
+~/verifiable-c
 <i>[tcarstens@weibel verifiable-c]$</i>
 </pre>
 </div>
@@ -234,12 +261,18 @@ Now let's write and verify something of our own.
 
 
 <code>strncat</code> in Verifiable C
-===================================
+====================================
 
-Here is a simple <code>strncat</code> implementation, along with its representation as CompCert Clight abstract syntax in Coq (download links for [<code>strncat.c</code>](/assets/strncat/strncat.c) and [<code>strncat.v</code>](/assets/strncat/strncat.v)):
+First lets set up our environment. While you weren't looking, I authored <code>.loadpath</code> and <code>strncat.c</code> (you can download the latter here: [<code>strncat.c</code>](/assets/strncat/strncat.c)). The <code>.loadpath</code> file is adapted from a file of the same name in the <code>VST</code> directory, which is generated when building VST. You can see it getting written in my VST build log above.
 
 <div style="background-color: #D6EBFF;">
 <pre style="white-space: pre-wrap;">
+<i>[tcarstens@weibel strncat]$</i> <b>ln -s ~/verifiable-c/compcert-2.3pl2 compcert</b>
+<i>[tcarstens@weibel strncat]$</i> <b>ln -s ~/verifiable-c/vst vst</b>
+<i>[tcarstens@weibel strncat]$</i> <b>ls -Fa</b>
+./  ../  .loadpath  compcert@  strncat.c  vst@
+<i>[tcarstens@weibel strncat]$</i> <b>cat .loadpath</b>
+-I vst/msl -as msl -I vst/sepcomp -as sepcomp -I vst/veric -as veric -I vst/floyd -as floyd -I vst/linking -as linking -R compcert -as compcert
 <i>[tcarstens@weibel strncat]$</i> <b>cat strncat.c</b>
 typedef unsigned int size_t;
 
@@ -269,30 +302,56 @@ char *strncat(char *dest, const char *src, size_t n) {
 }
 
 
-<i>[tcarstens@weibel strncat]$</i> <b>~/verifiable-c/compcert-2.1/clightgen strncat.c</b>
+<i>[tcarstens@weibel strncat]$</i>
+</pre>
+</div>
+
+We now generate a Coq file <code>strncat.v</code> which contains abstract-syntax for a Clight version of <code>strncat.c</code> (which you can download here: [<code>strncat.v</code>](/assets/strncat/strncat.v)):
+
+<div style="background-color: #D6EBFF;">
+<pre style="white-space: pre-wrap;">
+<i>[tcarstens@weibel strncat]$</i> <b>compcert/clightgen strncat.c</b>
 <i>[tcarstens@weibel strncat]$</i> <b>cat strncat.v</b>
 Require Import Clightdefs.
 
 Local Open Scope Z_scope.
 
-Definition _dest : ident := 8%positive.
-Definition _i : ident := 5%positive.
-Definition _strncat : ident := 12%positive.
-Definition _n : ident := 10%positive.
-Definition ___builtin_annot_intval : ident := 3%positive.
+Definition ___builtin_fsqrt : ident := 16%positive.
+Definition _strlen : ident := 24%positive.
+Definition _i : ident := 22%positive.
+Definition ___builtin_read16_reversed : ident := 17%positive.
+Definition ___builtin_va_end : ident := 8%positive.
+Definition ___builtin_va_start : ident := 5%positive.
+Definition ___builtin_bswap : ident := 12%positive.
+Definition ___compcert_va_int64 : ident := 10%positive.
+Definition ___builtin_annot : ident := 3%positive.
 Definition ___builtin_memcpy_aligned : ident := 2%positive.
 Definition ___builtin_fabs : ident := 1%positive.
-Definition _c : ident := 6%positive.
-Definition _dest_len : ident := 11%positive.
-Definition _s : ident := 4%positive.
-Definition _strlen : ident := 7%positive.
-Definition _src : ident := 9%positive.
-Definition _main : ident := 13%positive.
-Definition _dest_len' : ident := 14%positive.
+Definition ___builtin_bswap16 : ident := 14%positive.
+Definition ___builtin_va_arg : ident := 6%positive.
+Definition _src : ident := 26%positive.
+Definition ___builtin_write16_reversed : ident := 19%positive.
+Definition ___compcert_va_float64 : ident := 11%positive.
+Definition ___builtin_annot_intval : ident := 4%positive.
+Definition _dest_len : ident := 28%positive.
+Definition ___builtin_va_copy : ident := 7%positive.
+Definition _s : ident := 21%positive.
+Definition ___builtin_read32_reversed : ident := 18%positive.
+Definition ___compcert_va_int32 : ident := 9%positive.
+Definition ___builtin_bswap32 : ident := 13%positive.
+Definition _n : ident := 27%positive.
+Definition _dest : ident := 25%positive.
+Definition ___builtin_cntlz : ident := 15%positive.
+Definition _strncat : ident := 29%positive.
+Definition _main : ident := 30%positive.
+Definition _c : ident := 23%positive.
+Definition ___builtin_write32_reversed : ident := 20%positive.
+Definition _dest_len' : ident := 31%positive.
 
 
 Definition f_strlen := {|
   fn_return := tuint;
+  fn_callconv := cc_default;
   fn_params := ((_s, (tptr tuchar)) :: nil);
   fn_vars := nil;
   fn_temps := ((_i, tuint) :: (_c, tuchar) :: nil);
@@ -322,16 +381,17 @@ Definition f_strlen := {|
 
 Definition f_strncat := {|
   fn_return := (tptr tuchar);
+  fn_callconv := cc_default;
   fn_params := ((_dest, (tptr tuchar)) :: (_src, (tptr tuchar)) ::
                 (_n, tuint) :: nil);
   fn_vars := nil;
-  fn_temps := ((_dest_len, tuint) :: (_i, tuint) :: (15%positive, tint) ::
+  fn_temps := ((_dest_len, tuint) :: (_i, tuint) :: (32%positive, tint) ::
                (_dest_len', tuint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
     (Scall (Some _dest_len')
-      (Evar _strlen (Tfunction (Tcons (tptr tuchar) Tnil) tuint))
+      (Evar _strlen (Tfunction (Tcons (tptr tuchar) Tnil) tuint cc_default))
       ((Etempvar _dest (tptr tuchar)) :: nil))
     (Sset _dest_len (Etempvar _dest_len' tuint)))
   (Ssequence
@@ -343,16 +403,16 @@ Definition f_strncat := {|
             (Sifthenelse (Ebinop Olt (Etempvar _i tuint) (Etempvar _n tuint)
                            tint)
               (Ssequence
-                (Sset 15%positive
+                (Sset 32%positive
                   (Ecast
                     (Ebinop One
                       (Ederef
                         (Ebinop Oadd (Etempvar _src (tptr tuchar))
                           (Etempvar _i tuint) (tptr tuchar)) tuchar)
                       (Econst_int (Int.repr 0) tint) tint) tbool))
-                (Sset 15%positive (Ecast (Etempvar 15%positive tbool) tint)))
-              (Sset 15%positive (Econst_int (Int.repr 0) tint)))
-            (Sifthenelse (Etempvar 15%positive tint) Sskip Sbreak))
+                (Sset 32%positive (Ecast (Etempvar 32%positive tbool) tint)))
+              (Sset 32%positive (Econst_int (Int.repr 0) tint)))
+            (Sifthenelse (Etempvar 32%positive tint) Sskip Sbreak))
           (Sassign
             (Ederef
               (Ebinop Oadd (Etempvar _dest (tptr tuchar))
@@ -377,25 +437,100 @@ Definition prog : Clight.program := {|
 prog_defs :=
 ((___builtin_fabs,
    Gfun(External (EF_builtin ___builtin_fabs
-                   (mksignature (AST.Tfloat :: nil) (Some AST.Tfloat)))
-     (Tcons tdouble Tnil) tdouble)) ::
+                   (mksignature (AST.Tfloat :: nil) (Some AST.Tfloat)
+                     cc_default)) (Tcons tdouble Tnil) tdouble cc_default)) ::
  (___builtin_memcpy_aligned,
    Gfun(External (EF_builtin ___builtin_memcpy_aligned
                    (mksignature
                      (AST.Tint :: AST.Tint :: AST.Tint :: AST.Tint :: nil)
-                     None))
+                     None cc_default))
      (Tcons (tptr tvoid)
-       (Tcons (tptr tvoid) (Tcons tuint (Tcons tuint Tnil)))) tvoid)) ::
+       (Tcons (tptr tvoid) (Tcons tuint (Tcons tuint Tnil)))) tvoid
+     cc_default)) ::
+ (___builtin_annot,
+   Gfun(External (EF_builtin ___builtin_annot
+                   (mksignature (AST.Tint :: nil) None
+                     {|cc_vararg:=true; cc_structret:=false|}))
+     (Tcons (tptr tuchar) Tnil) tvoid
+     {|cc_vararg:=true; cc_structret:=false|})) ::
  (___builtin_annot_intval,
    Gfun(External (EF_builtin ___builtin_annot_intval
-                   (mksignature (AST.Tint :: AST.Tint :: nil)
-                     (Some AST.Tint)))
-     (Tcons (tptr tuchar) (Tcons tint Tnil)) tint)) ::
- (_strlen, Gfun(Internal f_strlen)) ::
+                   (mksignature (AST.Tint :: AST.Tint :: nil) (Some AST.Tint)
+                     cc_default)) (Tcons (tptr tuchar) (Tcons tint Tnil))
+     tint cc_default)) ::
+ (___builtin_va_start,
+   Gfun(External (EF_builtin ___builtin_va_start
+                   (mksignature (AST.Tint :: nil) None cc_default))
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
+ (___builtin_va_arg,
+   Gfun(External (EF_builtin ___builtin_va_arg
+                   (mksignature (AST.Tint :: AST.Tint :: nil) None
+                     cc_default)) (Tcons (tptr tvoid) (Tcons tuint Tnil))
+     tvoid cc_default)) ::
+ (___builtin_va_copy,
+   Gfun(External (EF_builtin ___builtin_va_copy
+                   (mksignature (AST.Tint :: AST.Tint :: nil) None
+                     cc_default))
+     (Tcons (tptr tvoid) (Tcons (tptr tvoid) Tnil)) tvoid cc_default)) ::
+ (___builtin_va_end,
+   Gfun(External (EF_builtin ___builtin_va_end
+                   (mksignature (AST.Tint :: nil) None cc_default))
+     (Tcons (tptr tvoid) Tnil) tvoid cc_default)) ::
+ (___compcert_va_int32,
+   Gfun(External (EF_external ___compcert_va_int32
+                   (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
+     (Tcons (tptr tvoid) Tnil) tuint cc_default)) ::
+ (___compcert_va_int64,
+   Gfun(External (EF_external ___compcert_va_int64
+                   (mksignature (AST.Tint :: nil) (Some AST.Tlong)
+                     cc_default)) (Tcons (tptr tvoid) Tnil) tulong
+     cc_default)) ::
+ (___compcert_va_float64,
+   Gfun(External (EF_external ___compcert_va_float64
+                   (mksignature (AST.Tint :: nil) (Some AST.Tfloat)
+                     cc_default)) (Tcons (tptr tvoid) Tnil) tdouble
+     cc_default)) ::
+ (___builtin_bswap,
+   Gfun(External (EF_builtin ___builtin_bswap
+                   (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
+     (Tcons tuint Tnil) tuint cc_default)) ::
+ (___builtin_bswap32,
+   Gfun(External (EF_builtin ___builtin_bswap32
+                   (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
+     (Tcons tuint Tnil) tuint cc_default)) ::
+ (___builtin_bswap16,
+   Gfun(External (EF_builtin ___builtin_bswap16
+                   (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
+     (Tcons tushort Tnil) tushort cc_default)) ::
+ (___builtin_cntlz,
+   Gfun(External (EF_builtin ___builtin_cntlz
+                   (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
+     (Tcons tuint Tnil) tuint cc_default)) ::
+ (___builtin_fsqrt,
+   Gfun(External (EF_builtin ___builtin_fsqrt
+                   (mksignature (AST.Tfloat :: nil) (Some AST.Tfloat)
+                     cc_default)) (Tcons tdouble Tnil) tdouble cc_default)) ::
+ (___builtin_read16_reversed,
+   Gfun(External (EF_builtin ___builtin_read16_reversed
+                   (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
+     (Tcons (tptr tushort) Tnil) tushort cc_default)) ::
+ (___builtin_read32_reversed,
+   Gfun(External (EF_builtin ___builtin_read32_reversed
+                   (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
+     (Tcons (tptr tuint) Tnil) tuint cc_default)) ::
+ (___builtin_write16_reversed,
+   Gfun(External (EF_builtin ___builtin_write16_reversed
+                   (mksignature (AST.Tint :: AST.Tint :: nil) None
+                     cc_default)) (Tcons (tptr tushort) (Tcons tushort Tnil))
+     tvoid cc_default)) ::
+ (___builtin_write32_reversed,
+   Gfun(External (EF_builtin ___builtin_write32_reversed
+                   (mksignature (AST.Tint :: AST.Tint :: nil) None
+                     cc_default)) (Tcons (tptr tuint) (Tcons tuint Tnil))
+     tvoid cc_default)) :: (_strlen, Gfun(Internal f_strlen)) ::
  (_strncat, Gfun(Internal f_strncat)) :: nil);
 prog_main := _main
 |}.
-
 
 <i>[tcarstens@weibel strncat]$ </i>
 </pre>
@@ -433,14 +568,10 @@ Coq already has a [<code>string</code>](http://coq.inria.fr/stdlib/Coq.Strings.S
 
 So now we may begin writing our specification. Let us first specify the behavior of <code>strlen</code>, as our <code>strncat</code> specification will surely make use of it.
 
-Let's launch CoqIDE. First we need to set up some load paths, so that we can open up the CompCert and VST libraries. Then we're good to go:
+Ok, so let's compile <code>strncat.v</code> and fire up CoqIDE to begin authoring and proving a specification:
 
 <div style="background-color: #D6EBFF;">
 <pre style="white-space: pre-wrap;">
-<i>[tcarstens@weibel strncat]$</i> <b>ln -s ~/verifiable-c/compcert-2.1 compcert</b>
-<i>[tcarstens@weibel strncat]$</i> <b>ln -s ~/verifiable-c/vst vst</b>
-<i>[tcarstens@weibel strncat]$</i> <b>cat .loadpath</b>
--I vst/msl -as msl -I vst/sepcomp -as sepcomp -I vst/veric -as veric -I vst/floyd -as floyd -I vst/progs -as progs -R compcert -as compcert
 <i>[tcarstens@weibel strncat]$</i> <b>coqc `cat .loadpath` strncat.v</b>
 <i>[tcarstens@weibel strncat]$</i> <b>coqide `cat .loadpath` verif_strncat.v</b>
 </pre>
@@ -479,7 +610,23 @@ Inductive ascii_string (contents: Z -> val) (len size: Z) : Prop :=
      -> contents len = Vint Int.zero
      -> ascii_string contents len size.
 
-
+Lemma ascii_string_is_int:
+  forall contents len size,
+   ascii_string contents len size
+   -> forall i, 0 <= i <= len -> is_int (contents i).
+Proof.
+  intros.
+  destruct (Z_dec i len) eqn:?.
+  + destruct s ; try omega.
+    destruct H.
+    assert (ascii_not_nil (contents i)) as ann by (apply H1 ; omega).
+    inversion ann.
+    simpl ; trivial.
+  + inversion H.
+    subst.
+    rewrite H3.
+    simpl ; trivial.
+Qed.
 
 </pre>
 </div>
@@ -491,6 +638,9 @@ Now we're set to write our specification for <code>strlen</code>. Try to read th
 Require Import strncat.
 
 Local Open Scope logic.
+
+(* HACK!! *)
+Definition tuchar := tint.
 
 Definition strlen_spec :=
  DECLARE _strlen
@@ -523,7 +673,6 @@ First we bundle up all of our definitions and specifications:
 <pre>
 Definition Vprog : varspecs := nil.
 Definition Gprog : funspecs :=  strlen_spec :: nil.
-Definition Gtot := do_builtins (prog_defs prog) ++ Gprog.
 
 </pre>
 </div>
@@ -532,7 +681,109 @@ Now we can state and prove a lemma about <code>strlen</code> meeting its specifi
 
 <div style="background-color: #FFFFDB;">
 <pre>
-Lemma body_strlen: semax_body Vprog Gtot f_strlen strlen_spec.
+Lemma body_strlen: semax_body Vprog Gprog f_strlen strlen_spec.
+Proof.
+  start_function.
+  inversion H0 as [ zero_lte_len_lt_size H_ascii_not_nil H_contents_len ].
+  forward (* i = 0; *).
+  forward (* c = s[i]; *).
+  { entailer!.
+    destruct (Z_dec 0 len) eqn:?.
+    + assert (ascii_not_nil (contents 0)) as ann.
+      { apply H_ascii_not_nil.
+        destruct s ; omega.
+      }
+      inversion ann ; simpl ; trivial.
+    + subst ; rewrite H_contents_len ; simpl ; trivial.
+  }
+  set (strlen_Inv :=
+    EX i': Z,
+    (PROP ( 0 <= i' <= len )
+     LOCAL ( `(eq s0) (eval_id _s)
+           ; `(eq (Vint (Int.repr i'))) (eval_id _i)
+           ; `(eq (contents i')) (eval_id _c)
+           )
+     SEP ( `(array_at tint sh contents 0 size) (eval_id _s) )
+    ) ).
+  set (strlen_Post :=
+    (PROP ( )
+     LOCAL ( `(eq s0) (eval_id _s)
+           ; `(eq (Vint (Int.repr len))) (eval_id _i)
+           )
+     SEP ( `(array_at tint sh contents 0 size) (eval_id _s) )
+    ) ).
+  forward_while strlen_Inv strlen_Post; unfold strlen_Inv, strlen_Post in * ; clear strlen_Inv strlen_Post.
+  (* Prove that current precondition implies loop invariant *)
+  { apply exp_right with 0.
+    entailer!.
+  }
+  (* Prove that loop invariant implies typechecking condition *)
+  { entailer!. }
+  (* Prove that invariant && not loop-cond implies postcondition *)
+  { entailer!.
+    destruct (Z_dec i' len) eqn:?.
+    2: congruence.
+    destruct s ; try omega.
+    replace len with i' ; trivial.
+    rewrite negb_false_iff in H3.
+    apply int_eq_e in H3.
+    subst.
+    assert (ascii_not_nil (contents i')) as ann by (apply H_ascii_not_nil ; omega).
+    inversion ann.
+    rewrite H4 in H3.
+    inversion H3.
+    subst.
+    simpl in *.
+    omega.
+  }
+  (* Prove that loop body preserves invariant *)
+  { forward (* i++; *).
+    forward (* c = s[i]; *).
+    + entailer!.
+      { (* is_int (contents (i' + 1)) *)
+        apply (ascii_string_is_int _ _ _ H0).
+        assert (i' < len) ; try omega.
+        apply Z.le_lteq in H2.
+        destruct H2 ; trivial ; subst.
+        rewrite H_contents_len in H5 ; inversion H5 ; subst.
+        compute in H4 ; inversion H4.
+      }
+      { (* 0 <= i' + 1 < size *)
+        assert (i' < len) ; try omega.
+        apply Z.le_lteq in H2.
+        destruct H2 ; trivial ; subst.
+        rewrite H_contents_len in H5 ; inversion H5 ; subst.
+        compute in H4 ; inversion H4.
+      }
+    + entailer!.
+      apply exp_right with (i' + 1).
+      entailer!.
+      { (* i' + 1 <= len *)
+        assert (contents i' <> Vint Int.zero).
+        { intro Q ; rewrite Q in H5.
+          compute in H5.
+          inversion H5.
+        }
+        apply Z.le_lteq in H2.
+        destruct H2 ; subst ; try omega ; congruence.
+      }
+      { (* contents (i' + 1) = Vint _id *)
+        replace (i' + 1) with (Int.signed (Int.add (Int.repr i') (Int.repr 1))) ; try congruence.
+        rewrite add_repr.
+        apply Int.signed_repr.
+        assert (i' < len).
+        { apply Z.le_lteq in H2.
+          destruct H2 ; trivial ; subst.
+          rewrite H_contents_len in H5 ; inversion H5.
+        }
+        generalize Int.min_signed_neg.
+        omega.
+      }
+  }
+  (* loop is done, continue with rest of proof *)
+  forward (* return i; *).
+Qed.
+
 </pre>
 </div>
 

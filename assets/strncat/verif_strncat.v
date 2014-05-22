@@ -18,11 +18,31 @@ Inductive ascii_string (contents: Z -> val) (len size: Z) : Prop :=
      -> contents len = Vint Int.zero
      -> ascii_string contents len size.
 
+Lemma ascii_string_is_int:
+  forall contents len size,
+   ascii_string contents len size
+   -> forall i, 0 <= i <= len -> is_int (contents i).
+Proof.
+  intros.
+  destruct (Z_dec i len) eqn:?.
+  + destruct s ; try omega.
+    destruct H.
+    assert (ascii_not_nil (contents i)) as ann by (apply H1 ; omega).
+    inversion ann.
+    simpl ; trivial.
+  + inversion H.
+    subst.
+    rewrite H3.
+    simpl ; trivial.
+Qed.
 
 
 Require Import strncat.
 
 Local Open Scope logic.
+
+(* HACK!! *)
+Definition tuchar := tint.
 
 Definition strlen_spec :=
  DECLARE _strlen
@@ -38,43 +58,107 @@ Definition strlen_spec :=
 
 Definition Vprog : varspecs := nil.
 Definition Gprog : funspecs :=  strlen_spec :: nil.
-Definition Gtot := do_builtins (prog_defs prog) ++ Gprog.
 
-Lemma body_strlen: semax_body Vprog Gtot f_strlen strlen_spec.
+Lemma body_strlen: semax_body Vprog Gprog f_strlen strlen_spec.
 Proof.
   start_function.
-  name s  _s.
-  name i  _i.
-  name c  _c.
-  forward. (* i = 0; *)
-  forward. (* c = s[i]; *)
+  inversion H0 as [ zero_lte_len_lt_size H_ascii_not_nil H_contents_len ].
+  forward (* i = 0; *).
+  forward (* c = s[i]; *).
   { entailer!.
-
+    destruct (Z_dec 0 len) eqn:?.
+    + assert (ascii_not_nil (contents 0)) as ann.
+      { apply H_ascii_not_nil.
+        destruct s ; omega.
+      }
+      inversion ann ; simpl ; trivial.
+    + subst ; rewrite H_contents_len ; simpl ; trivial.
+  }
   set (strlen_Inv :=
-    EX  i : Z,
-    PROP  (0 <= i < size)
-    LOCAL  (`(eq s0) (eval_id _s); `isptr (eval_id _s);
-            `(eq (Vint (Int.repr i))) (eval_id _i))
-    SEP  (`(array_at tint sh contents 0 size) (eval_id _s))
-    ).
+    EX i': Z,
+    (PROP ( 0 <= i' <= len )
+     LOCAL ( `(eq s0) (eval_id _s)
+           ; `(eq (Vint (Int.repr i'))) (eval_id _i)
+           ; `(eq (contents i')) (eval_id _c)
+           )
+     SEP ( `(array_at tint sh contents 0 size) (eval_id _s) )
+    ) ).
   set (strlen_Post :=
-    PROP() LOCAL (`(eq s0) (eval_id _s);
-    `(eq (Vint (string_length_int (mk_string contents 0 (nat_of_Z size))))) (eval_id _i))
-    SEP (`(array_at tint sh contents 0 size) (eval_id _s))
-    ).
-  forward_while strlen_Inv strlen_Post ; try (clear strlen_Inv) ; try (clear strlen_Post).
+    (PROP ( )
+     LOCAL ( `(eq s0) (eval_id _s)
+           ; `(eq (Vint (Int.repr len))) (eval_id _i)
+           )
+     SEP ( `(array_at tint sh contents 0 size) (eval_id _s) )
+    ) ).
+  forward_while strlen_Inv strlen_Post; unfold strlen_Inv, strlen_Post in * ; clear strlen_Inv strlen_Post.
   (* Prove that current precondition implies loop invariant *)
   { apply exp_right with 0.
     entailer!.
   }
   (* Prove that loop invariant implies typechecking condition *)
-  { 
-  }
+  { entailer!. }
   (* Prove that invariant && not loop-cond implies postcondition *)
-  {
+  { entailer!.
+    destruct (Z_dec i' len) eqn:?.
+    2: congruence.
+    destruct s ; try omega.
+    replace len with i' ; trivial.
+    rewrite negb_false_iff in H3.
+    apply int_eq_e in H3.
+    subst.
+    assert (ascii_not_nil (contents i')) as ann by (apply H_ascii_not_nil ; omega).
+    inversion ann.
+    rewrite H4 in H3.
+    inversion H3.
+    subst.
+    simpl in *.
+    omega.
   }
   (* Prove that loop body preserves invariant *)
-  {
+  { forward (* i++; *).
+    forward (* c = s[i]; *).
+    + entailer!.
+      { (* is_int (contents (i' + 1)) *)
+        apply (ascii_string_is_int _ _ _ H0).
+        assert (i' < len) ; try omega.
+        apply Z.le_lteq in H2.
+        destruct H2 ; trivial ; subst.
+        rewrite H_contents_len in H5 ; inversion H5 ; subst.
+        compute in H4 ; inversion H4.
+      }
+      { (* 0 <= i' + 1 < size *)
+        assert (i' < len) ; try omega.
+        apply Z.le_lteq in H2.
+        destruct H2 ; trivial ; subst.
+        rewrite H_contents_len in H5 ; inversion H5 ; subst.
+        compute in H4 ; inversion H4.
+      }
+    + entailer!.
+      apply exp_right with (i' + 1).
+      entailer!.
+      { (* i' + 1 <= len *)
+        assert (contents i' <> Vint Int.zero).
+        { intro Q ; rewrite Q in H5.
+          compute in H5.
+          inversion H5.
+        }
+        apply Z.le_lteq in H2.
+        destruct H2 ; subst ; try omega ; congruence.
+      }
+      { (* contents (i' + 1) = Vint _id *)
+        replace (i' + 1) with (Int.signed (Int.add (Int.repr i') (Int.repr 1))) ; try congruence.
+        rewrite add_repr.
+        apply Int.signed_repr.
+        assert (i' < len).
+        { apply Z.le_lteq in H2.
+          destruct H2 ; trivial ; subst.
+          rewrite H_contents_len in H5 ; inversion H5.
+        }
+        generalize Int.min_signed_neg.
+        omega.
+      }
   }
+  (* loop is done, continue with rest of proof *)
+  forward (* return i; *).
 Qed.
 
