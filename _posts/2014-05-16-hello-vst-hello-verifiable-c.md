@@ -10,6 +10,12 @@ On today's show:
 * Table of Contents
 {:toc}
 
+Files you can download:
+
+* [<code>strncat.c</code>](/assets/strncat/strncat.c)
+* [<code>strncat.v</code>](/assets/strncat/strncat.v)
+* [<code>verif_strncat.v</code>](/assets/strncat/verif_strncat.v)
+
 Introduction
 ============
 
