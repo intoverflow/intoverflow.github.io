@@ -274,6 +274,7 @@ First lets set up our environment. While you weren't looking, I authored <code>.
 <i>[tcarstens@weibel strncat]$</i> <b>cat .loadpath</b>
 -I vst/msl -as msl -I vst/sepcomp -as sepcomp -I vst/veric -as veric -I vst/floyd -as floyd -I vst/linking -as linking -R compcert -as compcert
 <i>[tcarstens@weibel strncat]$</i> <b>cat strncat.c</b>
+#define char int
 typedef unsigned int size_t;
 
 size_t strlen(const char *s) {
