@@ -3,6 +3,8 @@ layout: post
 title: Hello VST, hello Verifiable C
 ---
 
+<center><h1 style="color: red; background-color: yellow;">new guide for VST 1.4 coming out today, 25-05-2014, just give me a minute!</h1></center>
+
 <center><h1 style="color: red; background-color: yellow;">draft draft draft draft draft</h1></center>
 
 On today's show:
