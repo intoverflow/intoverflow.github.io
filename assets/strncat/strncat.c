@@ -1,9 +1,8 @@
-#define char int
 typedef unsigned int size_t;
 
-size_t strlen(const char *s) {
+size_t strlen(const unsigned char *s) {
   size_t i;
-  char c;
+  unsigned char c;
 
   i = 0;
   c = s[i];
@@ -15,7 +14,7 @@ size_t strlen(const char *s) {
   return i;
 }
 
-char *strncat(char *dest, const char *src, size_t n) {
+unsigned char *strncat(unsigned char *dest, const unsigned char *src, size_t n) {
   size_t dest_len = strlen(dest);
   size_t i;
 

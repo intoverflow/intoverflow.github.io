@@ -55,58 +55,35 @@ Sounds very nice to me, let's get started.
 Installing CompCert and VST
 ===========================
 
-At time of writing, the latest release of VST is Version 1.3, which is compatible with CompCert 2.1 (which is not the latest CompCert).
+At time of writing, the latest release of VST is Version 1.4, which is compatible with CompCert 2.3pl2.
 
-Download link for CompCert 2.1: [http://compcert.inria.fr/release/compcert-2.1.tgz](http://compcert.inria.fr/release/compcert-2.1.tgz), or, if that's stale, you can get a copy from me: [http://intoverflow.github.io/assets/compcert-2.1.tgz](http://intoverflow.github.io/assets/compcert-2.1.tgz).
+Download link for CompCert 2.3pl2: [http://compcert.inria.fr/release/compcert-2.3pl2.tgz](http://compcert.inria.fr/release/compcert-2.3pl2.tgz), or, if that's stale, you can get a copy from me: [http://intoverflow.github.io/assets/compcert-2.3pl2.tgz](http://intoverflow.github.io/assets/compcert-2.3pl2.tgz).
 
-Download link for VST 1.3: [http://vst.cs.princeton.edu/download/vst-1.3.tgz](http://vst.cs.princeton.edu/download/vst-1.3.tgz), or, if that's stale, you can get a copy from me: [http://intoverflow.github.io/assets/vst-1.3.tgz](http://intoverflow.github.io/assets/vst-1.3.tgz).
+Download link for VST 1.4: [http://vst.cs.princeton.edu/download/vst-1.4.tgz](http://vst.cs.princeton.edu/download/vst-1.4.tgz), or, if that's stale, you can get a copy from me: [http://intoverflow.github.io/assets/vst-1.4.tgz](http://intoverflow.github.io/assets/vst-1.4.tgz).
 
-Alternatively, perhaps you want to use a bleeding-edge VST. At time of writing, that'd be SVN version 6491, which you'd need to get by mirroring [https://svn.princeton.edu/appel/vst/](https://svn.princeton.edu/appel/vst/). In the case of version 6491, you'd want to use CompCert 2.3pl2: [http://compcert.inria.fr/release/compcert-2.3pl2.tgz](http://compcert.inria.fr/release/compcert-2.3pl2.tgz), or, if that's stale, you can get a copy from me: [http://intoverflow.github.io/assets/compcert-2.3pl2.tgz](http://intoverflow.github.io/assets/compcert-2.3pl2.tgz).
-
-Here's how you'd get started using VST Version 1.3 with CompCert 2.1:
+So now we get started:
 
 <div style="background-color: #D6EBFF;">
 <pre>
 <i>[tcarstens@weibel ~]$</i> <b>mkdir verifiable-c</b>
 <i>[tcarstens@weibel ~]$</i> <b>cd verifiable-c/</b>
-<i>[tcarstens@weibel verifiable-c]$</i> <b>wget --quiet "http://compcert.inria.fr/release/compcert-2.1.tgz"</b>
-<i>[tcarstens@weibel verifiable-c]$</i> <b>wget --quiet "http://vst.cs.princeton.edu/download/vst-1.3.tgz"</b>
-<i>[tcarstens@weibel verifiable-c]$</i> <b>md5sum *</b>
-4581f9756bef08da363d954e7ad20e84  compcert-2.1.tgz
-895cd400c9f6d59b8f104a42d7bf4c98  vst-1.3.tgz
-<i>[tcarstens@weibel verifiable-c]$</i> <b>sha256sum *</b>
-bcb507d998a956c96672bd0f88a2bd792f08f564985675748902420b068862eb  compcert-2.1.tgz
-5dbe2f9aeb200959850c52bed14ce533f9ed548a9fbcbd7f8644813d5c56bc43  vst-1.3.tgz
-<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf compcert-2.1.tgz </b>
-<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf vst-1.3.tgz </b>
-<i>[tcarstens@weibel verifiable-c]$</i> <b>ls -F</b>
-compcert-2.1/  compcert-2.1.tgz  vst/  vst-1.3.tgz
-<i>[tcarstens@weibel verifiable-c]$</i>
-</pre>
-</div>
-
-Here's how you'd get started using VST from SVN with CompCert 2.3. The <code>wget</code> step for cloning the VST SVN repository takes a while; if you just want to download a tarball of it from me, here's a link for SVN version 6491: [http://intoverflow.github.io/assets/vst-svn6491.tgz](http://intoverflow.github.io/assets/vst-svn6491.tgz).
-
-<div style="background-color: #D6EBFF;">
-<pre style="white-space: pre-wrap;">
-<i>[tcarstens@weibel ~]$</i> <b>mkdir verifiable-c</b>
-<i>[tcarstens@weibel ~]$</i> <b>cd verifiable-c/</b>
 <i>[tcarstens@weibel verifiable-c]$</i> <b>wget --quiet "http://compcert.inria.fr/release/compcert-2.3pl2.tgz"</b>
-<i>[tcarstens@weibel verifiable-c]$</i> <b>wget -np -e robots=off -nH --cut-dirs=1 -r --quiet https://svn.princeton.edu/appel/vst/</b>
+<i>[tcarstens@weibel verifiable-c]$</i> <b>wget --quiet "http://vst.cs.princeton.edu/download/vst-1.4.tgz"</b>
 <i>[tcarstens@weibel verifiable-c]$</i> <b>md5sum *</b>
 f97700e91163e6fbdb645721e2c1350f  compcert-2.3pl2.tgz
-md5sum: vst: Is a directory
+d6a2aff5a454ffc421e18dbda690e930  vst-1.4.tgz
 <i>[tcarstens@weibel verifiable-c]$</i> <b>sha256sum *</b>
 a8626962e1aa0c7ac566d799c4b4c588a2bbc9e47fd5a2bfae8152438caf04b3  compcert-2.3pl2.tgz
-sha256sum: vst: Is a directory
-<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf compcert-2.3pl2.tgz </b>
+68a0ee84e3800c4fba933a9fd8a36fe4416ef758e80ec0a8416b3d984144aa1c  vst-1.4.tgz
+<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf compcert-2.3pl2.tgz</b>
+<i>[tcarstens@weibel verifiable-c]$</i> <b>tar -xf vst-1.4.tgz</b>
 <i>[tcarstens@weibel verifiable-c]$</i> <b>ls -F</b>
-compcert-2.3pl2/  compcert-2.3pl2.tgz  vst/
+compcert-2.3pl2/  compcert-2.3pl2.tgz  vst/  vst-1.4.tgz
 <i>[tcarstens@weibel verifiable-c]$</i>
 </pre>
 </div>
 
-So far so good. Now we inspect our host for dependencies. In my case, I'm running Linux x86-64, with the intent to have CompCert target arm-eabi. You'll note that I therefore have two gcc's installed; when building CompCert, I'll need to specify which gcc to use.
+So far so good. Now we inspect our host for dependencies. In my case, I'm running Linux x86-64, with the intent to have CompCert target ia32-linux. You'll note that I have two gcc's installed; when building CompCert, I'll need to specify which gcc to use.
 
 <div style="background-color: #D6EBFF;">
 <pre style="white-space: pre-wrap;">
@@ -136,28 +113,29 @@ compiled on Mar 25 2014 01:27:43 with OCaml 4.01.0
 </pre>
 </div>
 
-Very good, let's build CompCert. I'm building CompCert 2.3pl2, but the process is *identical* for 2.1. Note my <code><b>toolprefix</b></code> setting (if I wanted to use gcc and not arm-none-eabi-gcc, I would have omitted the toolprefix switch):
+Very good, let's build CompCert. Now as it happens, CompCert depends on GCC at run-time (it uses the GCC preprocessor). So we need to tell CompCert which GCC to build for. By default, it will assume `gcc`, which happens to be what I want because I'm targetting ia32-linux. If I were targeting arm-eabi, I'd want to use `arm-none-eabi-gcc`, and to do that I'd toss in an extra `-toolprefix arm-none-eabi-` flag to the configure script.
 
 <div style="background-color: #D6EBFF;">
-<pre style="white-space: pre-wrap;">
+<pre>
 <i>[tcarstens@weibel verifiable-c]$</i> <b>pushd compcert-2.3pl2</b>
-~/verifiable-c/compcert-2.3 ~/verifiable-c
-<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>./configure arm-eabi -toolprefix arm-none-eabi- -no-runtime-lib</b>
-Testing assembler support for CFI directives... no
+~/verifiable-c/compcert-2.3pl2 ~/verifiable-c
+<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>./configure ia32-linux -no-runtime-lib &> ../compcert-2.3pl2.configurelog</b>
+<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>cat ../compcert-2.3pl2.configurelog</b>
+Testing assembler support for CFI directives... yes
 Testing Coq... version 8.4pl3 -- good!
 Testing OCaml... version 4.01.0 -- good!
 Testing Menhir... version 20140422 -- good!
 
 CompCert configuration:
-    Target architecture........... arm
-    Application binary interface.. eabi
+    Target architecture........... ia32
+    Application binary interface.. standard
     OS and development env........ linux
-    C compiler.................... arm-none-eabi-gcc
-    C preprocessor................ arm-none-eabi-gcc -U__GNUC__ '-D__REDIRECT(name,proto,alias)=name proto' '-D__REDIRECT_NTH(name,proto,alias)=name proto' -E
-    Assembler..................... arm-none-eabi-gcc -c
-    Assembler supports CFI........ false
-    Assembler for runtime lib..... arm-none-eabi-gcc -c
-    Linker........................ arm-none-eabi-gcc
+    C compiler.................... gcc -m32
+    C preprocessor................ gcc -m32 -U__GNUC__ -E
+    Assembler..................... gcc -m32 -c
+    Assembler supports CFI........ true
+    Assembler for runtime lib..... gcc -m32 -c
+    Linker........................ gcc -m32
     Math library.................. -lm
     Binaries installed in......... /usr/local/bin
     Runtime library provided...... false
@@ -166,17 +144,17 @@ CompCert configuration:
 
 If anything above looks wrong, please edit file ./Makefile.config to correct.
 
-<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>time make -j 6 clightgen</b>
-COQC lib/Axioms.v
-COQC lib/Coqlib.v
-ocamlopt -o tools/ndfun str.cmxa tools/ndfun.ml
-COQC flocq/Core/Fcore_Zaux.v
-<i>...(output elided)...</i>
-Finished, 441 targets (0 cached) in 00:00:11.
+<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>time make -j 6 all &> ../compcert-2.3pl2.makelog</b>
+<i>...(go get some coffee, or open another terminal and tail -f ../compcert-2.3pl2.makelog)...</i>
 
-real	14m18.279s
-user	37m48.863s
-sys	0m43.087s
+real	22m17.246s
+user	79m14.576s
+sys	1m28.580s
+<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>time make -j 6 clightgen &> ../compcert-2.3pl2.makelog-clightgen</b>
+
+real	0m1.732s
+user	0m1.600s
+sys	0m0.090s
 <i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>./clightgen --help</b>
 The CompCert Clight generator
 Usage: clightgen [options] &lt;source files>
@@ -203,6 +181,10 @@ Tracing options:
   -dclight       Save generated Clight in &lt;file>.light.c
 General options:
   -v             Print external commands before invoking them
+<i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>./ccomp --help</b>
+The CompCert C verified compiler, version 2.3pl2
+Usage: ccomp [options] &lt;source files>
+<i>...(output elided)...</i>
 <i>[tcarstens@weibel compcert-2.3pl2]$</i> <b>popd</b>
 ~/verifiable-c
 <i>[tcarstens@weibel verifiable-c]$</i>
@@ -218,20 +200,11 @@ Sweet. Now we can build VST. You'll need to create a <code>vst/CONFIGURE</code> 
 <i>[tcarstens@weibel vst]$</i> <b>echo "COMPCERT=../compcert-2.3pl2" > CONFIGURE</b>
 <i>[tcarstens@weibel vst]$</i> <b>cat CONFIGURE</b>
 COMPCERT=../compcert-2.3pl2
-<i>[tcarstens@weibel vst]$</i> <b>time make -j 6</b>
-Makefile:289: .depend: No such file or directory
-coqdep -slash  -I msl -as msl  -I sepcomp -as sepcomp  -I veric -as veric  -I floyd -as floyd  -I progs -as progs  -I sha -as sha  -I linking -as linking  -I compcomp -as compcomp -R ../compcert-2.3pl2 -as compcert msl/Axioms.v msl/Extensionality.v msl/base.v msl/eq_dec.v msl/ageable.v <i>(...output elided...)</i> sha/entail_examples2.v  > .depend
-echo  -I msl -as msl  -I sepcomp -as sepcomp  -I veric -as veric  -I floyd -as floyd  -I progs -as progs  -I sha -as sha  -I linking -as linking  -I compcomp -as compcomp -R ../compcert-2.3pl2 -as compcert >.loadpath
-COQC msl/Axioms.v
-<i>...(output elided)...</i>
-COQC progs/verif_insertion_sort.v
-&lt;W> Grammar extension: in [constr:operconstr] some rule has been masked
-&lt;W> Grammar extension: in [constr:operconstr] some rule has been masked
-&lt;W> Grammar extension: in [constr:pattern] some rule has been masked
-
-real	33m47.188s
-user	85m54.553s
-sys	0m39.500s
+<i>[tcarstens@weibel vst]$</i> <b>time make -j 6 &> ../vst.makelog</b>
+<i>...(go get some lunch, or open another terminal and tail -f ../vst.makelog)...</i>
+real	33m20.637s
+user	83m42.863s
+sys	0m39.973s
 <i>[tcarstens@weibel vst]$</i> <b>coqtop `cat .loadpath` -l progs/verif_sumarray.v</b>
 Welcome to Coq 8.4pl3 (March 2014)
 &lt;W> Grammar extension: in [constr:operconstr] some rule has been masked
@@ -280,14 +253,13 @@ First lets set up our environment. While you weren't looking, I authored <code>.
 <i>[tcarstens@weibel strncat]$</i> <b>ls -Fa</b>
 ./  ../  .loadpath  compcert@  strncat.c  vst@
 <i>[tcarstens@weibel strncat]$</i> <b>cat .loadpath</b>
--I vst/msl -as msl -I vst/sepcomp -as sepcomp -I vst/veric -as veric -I vst/floyd -as floyd -I vst/linking -as linking -R compcert -as compcert
+-I vst/msl -as msl -I vst/sepcomp -as sepcomp -I vst/veric -as veric -I vst/floyd -as floyd -I vst/progs -as progs -R compcert -as compcert
 <i>[tcarstens@weibel strncat]$</i> <b>cat strncat.c</b>
-#define char int
 typedef unsigned int size_t;
 
-size_t strlen(const char *s) {
+size_t strlen(const unsigned char *s) {
   size_t i;
-  char c;
+  unsigned char c;
 
   i = 0;
   c = s[i];
@@ -299,7 +271,7 @@ size_t strlen(const char *s) {
   return i;
 }
 
-char *strncat(char *dest, const char *src, size_t n) {
+unsigned char *strncat(unsigned char *dest, const unsigned char *src, size_t n) {
   size_t dest_len = strlen(dest);
   size_t i;
 
@@ -309,7 +281,6 @@ char *strncat(char *dest, const char *src, size_t n) {
 
   return dest;
 }
-
 
 <i>[tcarstens@weibel strncat]$</i>
 </pre>
@@ -325,37 +296,46 @@ Require Import Clightdefs.
 
 Local Open Scope Z_scope.
 
-Definition ___builtin_fsqrt : ident := 16%positive.
-Definition _strlen : ident := 24%positive.
-Definition _i : ident := 22%positive.
-Definition ___builtin_read16_reversed : ident := 17%positive.
-Definition ___builtin_va_end : ident := 8%positive.
-Definition ___builtin_va_start : ident := 5%positive.
-Definition ___builtin_bswap : ident := 12%positive.
-Definition ___compcert_va_int64 : ident := 10%positive.
-Definition ___builtin_annot : ident := 3%positive.
-Definition ___builtin_memcpy_aligned : ident := 2%positive.
-Definition ___builtin_fabs : ident := 1%positive.
-Definition ___builtin_bswap16 : ident := 14%positive.
-Definition ___builtin_va_arg : ident := 6%positive.
-Definition _src : ident := 26%positive.
-Definition ___builtin_write16_reversed : ident := 19%positive.
-Definition ___compcert_va_float64 : ident := 11%positive.
-Definition ___builtin_annot_intval : ident := 4%positive.
-Definition _dest_len : ident := 28%positive.
-Definition ___builtin_va_copy : ident := 7%positive.
-Definition _s : ident := 21%positive.
-Definition ___builtin_read32_reversed : ident := 18%positive.
-Definition ___compcert_va_int32 : ident := 9%positive.
-Definition ___builtin_bswap32 : ident := 13%positive.
-Definition _n : ident := 27%positive.
-Definition _dest : ident := 25%positive.
-Definition ___builtin_cntlz : ident := 15%positive.
-Definition _strncat : ident := 29%positive.
-Definition _main : ident := 30%positive.
-Definition _c : ident := 23%positive.
-Definition ___builtin_write32_reversed : ident := 20%positive.
-Definition _dest_len' : ident := 31%positive.
+Definition _c : ident := 32%positive.
+Definition ___compcert_va_int64 : ident := 16%positive.
+Definition _strncat : ident := 38%positive.
+Definition ___builtin_fmadd : ident := 24%positive.
+Definition ___builtin_fmax : ident := 22%positive.
+Definition ___compcert_va_float64 : ident := 17%positive.
+Definition ___builtin_memcpy_aligned : ident := 8%positive.
+Definition ___builtin_subl : ident := 5%positive.
+Definition ___builtin_va_arg : ident := 12%positive.
+Definition ___builtin_annot_intval : ident := 10%positive.
+Definition ___builtin_negl : ident := 3%positive.
+Definition ___builtin_write32_reversed : ident := 2%positive.
+Definition ___builtin_write16_reversed : ident := 1%positive.
+Definition _n : ident := 36%positive.
+Definition _i : ident := 31%positive.
+Definition ___builtin_va_end : ident := 14%positive.
+Definition ___builtin_mull : ident := 6%positive.
+Definition ___builtin_fnmadd : ident := 26%positive.
+Definition ___builtin_bswap32 : ident := 19%positive.
+Definition _main : ident := 39%positive.
+Definition ___builtin_va_start : ident := 11%positive.
+Definition _dest_len : ident := 37%positive.
+Definition ___builtin_addl : ident := 4%positive.
+Definition ___builtin_read16_reversed : ident := 28%positive.
+Definition ___builtin_fabs : ident := 7%positive.
+Definition ___builtin_fsqrt : ident := 21%positive.
+Definition ___builtin_bswap : ident := 18%positive.
+Definition ___builtin_annot : ident := 9%positive.
+Definition ___builtin_va_copy : ident := 13%positive.
+Definition ___builtin_fnmsub : ident := 27%positive.
+Definition _strlen : ident := 33%positive.
+Definition ___builtin_fmsub : ident := 25%positive.
+Definition ___compcert_va_int32 : ident := 15%positive.
+Definition _dest : ident := 34%positive.
+Definition ___builtin_read32_reversed : ident := 29%positive.
+Definition _src : ident := 35%positive.
+Definition _s : ident := 30%positive.
+Definition ___builtin_fmin : ident := 23%positive.
+Definition ___builtin_bswap16 : ident := 20%positive.
+Definition _dest_len' : ident := 40%positive.
 
 
 Definition f_strlen := {|
@@ -394,7 +374,7 @@ Definition f_strncat := {|
   fn_params := ((_dest, (tptr tuchar)) :: (_src, (tptr tuchar)) ::
                 (_n, tuint) :: nil);
   fn_vars := nil;
-  fn_temps := ((_dest_len, tuint) :: (_i, tuint) :: (32%positive, tint) ::
+  fn_temps := ((_dest_len, tuint) :: (_i, tuint) :: (41%positive, tint) ::
                (_dest_len', tuint) :: nil);
   fn_body :=
 (Ssequence
@@ -412,16 +392,16 @@ Definition f_strncat := {|
             (Sifthenelse (Ebinop Olt (Etempvar _i tuint) (Etempvar _n tuint)
                            tint)
               (Ssequence
-                (Sset 32%positive
+                (Sset 41%positive
                   (Ecast
                     (Ebinop One
                       (Ederef
                         (Ebinop Oadd (Etempvar _src (tptr tuchar))
                           (Etempvar _i tuint) (tptr tuchar)) tuchar)
                       (Econst_int (Int.repr 0) tint) tint) tbool))
-                (Sset 32%positive (Ecast (Etempvar 32%positive tbool) tint)))
-              (Sset 32%positive (Econst_int (Int.repr 0) tint)))
-            (Sifthenelse (Etempvar 32%positive tint) Sskip Sbreak))
+                (Sset 41%positive (Ecast (Etempvar 41%positive tbool) tint)))
+              (Sset 41%positive (Econst_int (Int.repr 0) tint)))
+            (Sifthenelse (Etempvar 41%positive tint) Sskip Sbreak))
           (Sassign
             (Ederef
               (Ebinop Oadd (Etempvar _dest (tptr tuchar))
@@ -460,12 +440,12 @@ prog_defs :=
    Gfun(External (EF_builtin ___builtin_annot
                    (mksignature (AST.Tint :: nil) None
                      {|cc_vararg:=true; cc_structret:=false|}))
-     (Tcons (tptr tuchar) Tnil) tvoid
+     (Tcons (tptr tschar) Tnil) tvoid
      {|cc_vararg:=true; cc_structret:=false|})) ::
  (___builtin_annot_intval,
    Gfun(External (EF_builtin ___builtin_annot_intval
                    (mksignature (AST.Tint :: AST.Tint :: nil) (Some AST.Tint)
-                     cc_default)) (Tcons (tptr tuchar) (Tcons tint Tnil))
+                     cc_default)) (Tcons (tptr tschar) (Tcons tint Tnil))
      tint cc_default)) ::
  (___builtin_va_start,
    Gfun(External (EF_builtin ___builtin_va_start
@@ -511,14 +491,48 @@ prog_defs :=
    Gfun(External (EF_builtin ___builtin_bswap16
                    (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
      (Tcons tushort Tnil) tushort cc_default)) ::
- (___builtin_cntlz,
-   Gfun(External (EF_builtin ___builtin_cntlz
-                   (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
-     (Tcons tuint Tnil) tuint cc_default)) ::
  (___builtin_fsqrt,
    Gfun(External (EF_builtin ___builtin_fsqrt
                    (mksignature (AST.Tfloat :: nil) (Some AST.Tfloat)
                      cc_default)) (Tcons tdouble Tnil) tdouble cc_default)) ::
+ (___builtin_fmax,
+   Gfun(External (EF_builtin ___builtin_fmax
+                   (mksignature (AST.Tfloat :: AST.Tfloat :: nil)
+                     (Some AST.Tfloat) cc_default))
+     (Tcons tdouble (Tcons tdouble Tnil)) tdouble cc_default)) ::
+ (___builtin_fmin,
+   Gfun(External (EF_builtin ___builtin_fmin
+                   (mksignature (AST.Tfloat :: AST.Tfloat :: nil)
+                     (Some AST.Tfloat) cc_default))
+     (Tcons tdouble (Tcons tdouble Tnil)) tdouble cc_default)) ::
+ (___builtin_fmadd,
+   Gfun(External (EF_builtin ___builtin_fmadd
+                   (mksignature
+                     (AST.Tfloat :: AST.Tfloat :: AST.Tfloat :: nil)
+                     (Some AST.Tfloat) cc_default))
+     (Tcons tdouble (Tcons tdouble (Tcons tdouble Tnil))) tdouble
+     cc_default)) ::
+ (___builtin_fmsub,
+   Gfun(External (EF_builtin ___builtin_fmsub
+                   (mksignature
+                     (AST.Tfloat :: AST.Tfloat :: AST.Tfloat :: nil)
+                     (Some AST.Tfloat) cc_default))
+     (Tcons tdouble (Tcons tdouble (Tcons tdouble Tnil))) tdouble
+     cc_default)) ::
+ (___builtin_fnmadd,
+   Gfun(External (EF_builtin ___builtin_fnmadd
+                   (mksignature
+                     (AST.Tfloat :: AST.Tfloat :: AST.Tfloat :: nil)
+                     (Some AST.Tfloat) cc_default))
+     (Tcons tdouble (Tcons tdouble (Tcons tdouble Tnil))) tdouble
+     cc_default)) ::
+ (___builtin_fnmsub,
+   Gfun(External (EF_builtin ___builtin_fnmsub
+                   (mksignature
+                     (AST.Tfloat :: AST.Tfloat :: AST.Tfloat :: nil)
+                     (Some AST.Tfloat) cc_default))
+     (Tcons tdouble (Tcons tdouble (Tcons tdouble Tnil))) tdouble
+     cc_default)) ::
  (___builtin_read16_reversed,
    Gfun(External (EF_builtin ___builtin_read16_reversed
                    (mksignature (AST.Tint :: nil) (Some AST.Tint) cc_default))
@@ -581,7 +595,11 @@ Ok, so let's compile <code>strncat.v</code> and fire up CoqIDE to begin authorin
 
 <div style="background-color: #D6EBFF;">
 <pre style="white-space: pre-wrap;">
-<i>[tcarstens@weibel strncat]$</i> <b>coqc `cat .loadpath` strncat.v</b>
+<i>[tcarstens@weibel strncat]$</i> <b>time coqc `cat .loadpath` strncat.v</b>
+
+real	0m2.107s
+user	0m1.900s
+sys	0m0.200s
 <i>[tcarstens@weibel strncat]$</i> <b>coqide `cat .loadpath` verif_strncat.v</b>
 </pre>
 </div>
@@ -648,9 +666,6 @@ Require Import strncat.
 
 Local Open Scope logic.
 
-(* HACK!! *)
-Definition tuchar := tint.
-
 Definition strlen_spec :=
  DECLARE _strlen
   WITH s0: val, sh : share, contents : Z -> val, len: Z, size: Z
@@ -658,7 +673,7 @@ Definition strlen_spec :=
           PROP (0 < size <= Int.max_signed;
                 ascii_string contents len size)
           LOCAL (`(eq s0) (eval_id _s); `isptr (eval_id _s))
-          SEP (`(array_at tuchar sh contents 0 size) (eval_id _s))
+          SEP (`(array_at tuchar sh contents 0 size s0))
   POST [ tuint ]
         local (`(eq (Vint (Int.repr len))) retval)
               && `(array_at tuchar sh contents 0 size s0).
@@ -688,112 +703,4 @@ Definition Gprog : funspecs :=  strlen_spec :: nil.
 
 Now we can state and prove a lemma about <code>strlen</code> meeting its specification:
 
-<div style="background-color: #FFFFDB;">
-<pre>
-Lemma body_strlen: semax_body Vprog Gprog f_strlen strlen_spec.
-Proof.
-  start_function.
-  inversion H0 as [ zero_lte_len_lt_size H_ascii_not_nil H_contents_len ].
-  forward (* i = 0; *).
-  forward (* c = s[i]; *).
-  { entailer!.
-    destruct (Z_dec 0 len) eqn:?.
-    + assert (ascii_not_nil (contents 0)) as ann.
-      { apply H_ascii_not_nil.
-        destruct s ; omega.
-      }
-      inversion ann ; simpl ; trivial.
-    + subst ; rewrite H_contents_len ; simpl ; trivial.
-  }
-  set (strlen_Inv :=
-    EX i': Z,
-    (PROP ( 0 <= i' <= len )
-     LOCAL ( `(eq s0) (eval_id _s)
-           ; `(eq (Vint (Int.repr i'))) (eval_id _i)
-           ; `(eq (contents i')) (eval_id _c)
-           )
-     SEP ( `(array_at tint sh contents 0 size) (eval_id _s) )
-    ) ).
-  set (strlen_Post :=
-    (PROP ( )
-     LOCAL ( `(eq s0) (eval_id _s)
-           ; `(eq (Vint (Int.repr len))) (eval_id _i)
-           )
-     SEP ( `(array_at tint sh contents 0 size) (eval_id _s) )
-    ) ).
-  forward_while strlen_Inv strlen_Post; unfold strlen_Inv, strlen_Post in * ; clear strlen_Inv strlen_Post.
-  (* Prove that current precondition implies loop invariant *)
-  { apply exp_right with 0.
-    entailer!.
-  }
-  (* Prove that loop invariant implies typechecking condition *)
-  { entailer!. }
-  (* Prove that invariant && not loop-cond implies postcondition *)
-  { entailer!.
-    destruct (Z_dec i' len) eqn:?.
-    2: congruence.
-    destruct s ; try omega.
-    replace len with i' ; trivial.
-    rewrite negb_false_iff in H3.
-    apply int_eq_e in H3.
-    subst.
-    assert (ascii_not_nil (contents i')) as ann by (apply H_ascii_not_nil ; omega).
-    inversion ann.
-    rewrite H4 in H3.
-    inversion H3.
-    subst.
-    simpl in *.
-    omega.
-  }
-  (* Prove that loop body preserves invariant *)
-  { forward (* i++; *).
-    forward (* c = s[i]; *).
-    + entailer!.
-      { (* is_int (contents (i' + 1)) *)
-        apply (ascii_string_is_int _ _ _ H0).
-        assert (i' < len) ; try omega.
-        apply Z.le_lteq in H2.
-        destruct H2 ; trivial ; subst.
-        rewrite H_contents_len in H5 ; inversion H5 ; subst.
-        compute in H4 ; inversion H4.
-      }
-      { (* 0 <= i' + 1 < size *)
-        assert (i' < len) ; try omega.
-        apply Z.le_lteq in H2.
-        destruct H2 ; trivial ; subst.
-        rewrite H_contents_len in H5 ; inversion H5 ; subst.
-        compute in H4 ; inversion H4.
-      }
-    + entailer!.
-      apply exp_right with (i' + 1).
-      entailer!.
-      { (* i' + 1 <= len *)
-        assert (contents i' <> Vint Int.zero).
-        { intro Q ; rewrite Q in H5.
-          compute in H5.
-          inversion H5.
-        }
-        apply Z.le_lteq in H2.
-        destruct H2 ; subst ; try omega ; congruence.
-      }
-      { (* contents (i' + 1) = Vint _id *)
-        replace (i' + 1) with (Int.signed (Int.add (Int.repr i') (Int.repr 1))) ; try congruence.
-        rewrite add_repr.
-        apply Int.signed_repr.
-        assert (i' < len).
-        { apply Z.le_lteq in H2.
-          destruct H2 ; trivial ; subst.
-          rewrite H_contents_len in H5 ; inversion H5.
-        }
-        generalize Int.min_signed_neg.
-        omega.
-      }
-  }
-  (* loop is done, continue with rest of proof *)
-  forward (* return i; *).
-Qed.
-
-</pre>
-</div>
-
-
+<h1> coming soon! </h1>
