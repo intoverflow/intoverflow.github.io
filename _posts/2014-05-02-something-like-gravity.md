@@ -5,6 +5,9 @@ title: Something like gravity
 
 <center><h1 style="color: red; background-color: yellow;">draft draft draft draft draft</h1></center>
 
+<center><i>This draft is loaded with errors and omissions. There are a lot of things I had planned to say about this model - particularly about the ways in which it is non-physical - but which I never had a chance to write down. Some of the analysis is also flawed. I'm leaving it here as a reminder to myself of the direction I was going. Ye have been warned.</i></center>
+
+
 Introduction
 ============
 
