@@ -43,7 +43,7 @@ class Vec3D {
     z = in_z;
   }
 
-  void rotateAbout(Vec3D u, float angle) {
+  Vec3D rotateAboutPure(Vec3D u, float angle) {
     float c = cos(angle);
     float s = sin(angle);
 
@@ -59,11 +59,36 @@ class Vec3D {
     float a32 = u.z*u.y*(1-c) + u.x*s;
     float a33 = c + u.z*u.z*(1-c);
 
-    nx = a11 * x + a12 * y + a13 * z;
-    ny = a21 * x + a22 * y + a23 * z;
-    nz = a31 * x + a32 * y + a33 * z;
+    return new Vec3D(a11 * x + a12 * y + a13 * z
+                    ,a21 * x + a22 * y + a23 * z
+                    ,a31 * x + a32 * y + a33 * z);
+  }
 
-    x = nx; y = ny; z = nz;
+  void rotateAbout(Vec3D u, float angle) {
+    Vec3D n = rotateAboutPure(u, angle);
+    x = n.x;
+    y = n.y;
+    z = n.z;
+  }
+
+  float dotPute(Vec3D v) {
+    return x*v.x + y*v.y + z*v.z;
+  }
+
+  float normPure() {
+    return sqrt(x*x + y*y + z*z);
+  }
+
+  void scale(float s) {
+    x *= s;
+    y *= s;
+    z *= s;
+  }
+
+  void normalize() {
+    float n = normPure();
+    if (n > 0)
+      scale(n);
   }
 }
 
@@ -98,37 +123,56 @@ class GeneralCamera {
     m_center = new Vec3D(0, 0, 0);
   }
 
-  void translate(float dX, float dY) {
-    m_e1.rotateAbout(m_e3, dX * m_translate_speed);
-    m_e1.rotateAbout(m_e3, dX * m_translate_speed);
+  void translate(float dX, float dZ) {
+    if (0 == dX || 0 == dZ) {
+      Vec3D axis;
+      if (0 == dX && 0 != dZ) {
+        axis = new Vec3D(m_e1.x, m_e1.y, m_e1.z);
+        if (dZ < 0) axis.scale(-1);
+      }
+      else if (0 != dX && 0 == dZ) {
+        axis = new Vec3D(m_e3.x, m_e3.y, m_e3.z);
+        if (dX < 0) axis.scale(-1);
+      }
 
-    m_e2.rotateAbout(m_e3, dX * m_translate_speed);
-    m_e2.rotateAbout(m_e3, dX * m_translate_speed);
+      if (0 != dX || 0 != dZ) {
+        float angle = sqrt(dX*dX + dZ*dZ) * m_translate_speed;
+        m_e1.rotateAbout(axis, angle);
+        m_e2.rotateAbout(axis, angle);
+        m_e3.rotateAbout(axis, angle);
 
+        the_log.log("translate by (" + dX + ", " + dZ + ") " + angle);
+      }
+    }
+    else {
+      float angle_of_rotation = atan(dZ/dX);
 
-    m_e2.rotateAbout(m_e1, dY * m_translate_speed);
-    m_e2.rotateAbout(m_e1, dY * m_translate_speed);
+      Vec3D axis = m_e3.rotateAboutPure(m_e2, -angle_of_rotation);
 
-    m_e3.rotateAbout(m_e3, dY * m_translate_speed);
-    m_e3.rotateAbout(m_e3, dY * m_translate_speed);
+      float angle = sqrt(dX*dX + dZ*dZ) * m_translate_speed;
+      if (dX < 0)
+        angle *= -1;
+      m_e1.rotateAbout(axis, angle);
+      m_e2.rotateAbout(axis, angle);
+      m_e3.rotateAbout(axis, angle);
 
-    the_log.log("translate by (" + dX + ", " + dY + ")");
+      the_log.log("translate by (" + dX + ", " + dZ + ") " + angle_of_rotation + " " + angle);
+    }
   }
 
-  void tilt(float d) {
-    m_e1.rotateAbout(m_e2, d * m_tilt_speed);
-    m_e1.rotateAbout(m_e2, d * m_tilt_speed);
+  void tilt(float dY) {
+    m_e1.rotateAbout(m_e2, dY * m_tilt_speed);
+    m_e3.rotateAbout(m_e2, dY * m_tilt_speed);
 
-    m_e3.rotateAbout(m_e2, d * m_tilt_speed);
-    m_e3.rotateAbout(m_e2, d * m_tilt_speed);
-
-    the_log.log("tilt by " + d);
+    the_log.log("tilt by " + dY);
   }
 
   void zoom(float steps) {
     float zoom_velocity = - steps * m_zoom_speed;
 
     m_zoom += zoom_velocity;
+    if (m_zoom < 75)
+      m_zoom = 75;
 
     the_log.log("zoom by " + zoom_velocity);
   }
@@ -159,6 +203,8 @@ void draw() {
   background(50);
   lights();
 
+  hint(DISABLE_DEPTH_TEST);
+
   cam.switchTo();
 
   pushMatrix();
@@ -180,6 +226,7 @@ void draw() {
   popMatrix();
 
   stroke(255);
+  fill(127, 127, 127, 127);
 
   pushMatrix();
     rotateZ(PI/3);
@@ -187,15 +234,20 @@ void draw() {
     translate(30, 0, 0);
     rotateX(-PI/6);
     rotateY(PI/3 + 210/float(height) * PI);
-    box(45);
-
     translate(0, 0, -50);
     box(30);
+
+    translate(0, 0, 50);
+    box(45);
+
   popMatrix();
+
+  // println(frameRate);
 }
 
 void setup () {
   size(canvas_width, canvas_height, P3D);
+  frameRate(120);
   cam.gotoDefault();
 }
 
