@@ -1,6 +1,31 @@
 canvas_width = 1024;
 canvas_height = 576;
 
+/***********************************************************
+ *
+ * Log class
+ * Records events to the app's debug text area
+ *
+ **********************************************************/
+
+class Log {
+  var m_textarea;
+  int m_msg_num;
+
+  Log() {
+    m_textarea = document.getElementById("app-log");
+    m_msgnum = 1;
+  }
+
+  void log(string s) {
+    m_textarea.value = (m_msg_num + ": " + s + "\n" + m_textarea.value);
+    m_msg_num++;
+  }
+}
+
+Log the_log = new Log();
+
+
 
 
 /***********************************************************
@@ -49,6 +74,8 @@ class Dimension {
         return v * pcfg.fundamental_scale * 2.45;
       case UNIT_CENTIMETERS:
         return v * pcfg.fundamental_scale;
+      default:
+        the_log.log("Dimension.P3Dval: unknown unit_of_measure '" + unit_of_measure + "'");
     }
   }
 
@@ -63,7 +90,7 @@ class Dimension {
       case UNIT_CENTIMETERS:
         return v + " cm";
       default:
-        return v + " [" + unit_of_measure + "]";
+        the_log.log("Dimension.pretty: unknown unit_of_measure '" + unit_of_measure + "'");
     }
   }
 }
@@ -116,32 +143,46 @@ class Project {
   }
 
   boolean addDimension(string in_name, float in_val, int in_uom) {
-    if (dimensions.containsKey(in_name))
+    if (dimensions.containsKey(in_name)) {
+      the_log.log("Project.addDimension: that name is already taken '" + in_name + "'");
       return false;
+    }
     Dimension d = new Dimension(pcfg, in_name, in_val, in_uom);
     dimensions.put(in_name, d);
     return true;
   }
 
   boolean addMaterial(string in_name, string in_thickness) {
-    if (!dimensions.containsKey(in_thickness))
+    if (!dimensions.containsKey(in_thickness)) {
+      the_log.log("Project.addMaterial: unknown dimension '" + in_thickness + "'");
       return false;
-    if (materials.containsKey(in_name))
+    }
+    if (materials.containsKey(in_name)) {
+      the_log.log("Project.addMaterial: that name is already taken '" + in_name + "'");
       return false;
+    }
     Material m = new Material(pcfg, in_name, in_thickness);
     materials.put(in_name, m);
     return true;
   }
 
   boolean addPart(string in_name, string in_material, string in_xwidth, string in_ywidth) {
-    if (!materials.containsKey(in_material))
+    if (!materials.containsKey(in_material)) {
+      the_log.log("Project.addPart: unknown material '" + in_material + "'");
       return false;
-    if (!dimensions.containsKey(in_xwidth))
+    }
+    if (!dimensions.containsKey(in_xwidth)) {
+      the_log.log("Project.addPart: unknown dimension (xwidth) '" + in_xwidth + "'");
       return false;
-    if (!dimensions.containsKey(in_ywidth))
+    }
+    if (!dimensions.containsKey(in_ywidth)) {
+      the_log.log("Project.addPart: unknown dimension (ywidth) '" + in_ywidth + "'");
       return false;
-    if (parts.containsKey(in_name))
+    }
+    if (parts.containsKey(in_name)) {
+      the_log.log("Project.addPart: that name is already taken '" + in_name + "'");
       return false;
+    }
     Part p = new Part(pcfg, in_name, in_material, in_xwidth, in_ywidth);
     parts.put(in_name, p);
     return true;
@@ -150,84 +191,14 @@ class Project {
 
 
 
-void drawPart(Project proj, string pname) {
-  pushMatrix();
-    stroke(255);
-    fill(127, 127, 127, 127);
-
-    translate(0, 0, 0);
-
-    /* fetch part */
-    Part part = proj.parts.get(pname);
-    if (null == part) goto drawPart_abort;
-
-    Dimension xwidth = proj.dimensions.get(part.DIM_xwidth);
-    Dimension ywidth = proj.dimensions.get(part.DIM_ywidth);
-    if (null == xwidth || null == ywidth) goto drawPart_abort;
-
-    Material mat = proj.materials.get(part.MAT_material);
-    if (null == mat) goto drawPart_abort;
-
-    Dimension zwidth = proj.dimensions.get(mat.DIM_thickness);
-    if (null == zwidth) goto drawPart_abort;
-
-    float x = xwidth.P3Dval();
-    float y = ywidth.P3Dval();
-    float z = zwidth.P3Dval();
-
-    /* draw the part */
-    box(x, y, z);
-
-    /* draw the widths */
-    stroke(0, 255, 255);
-    fill(0, 255, 255, 255);
-    line( x/2 + 5, -(y/2), -z/2
-        , x/2 + 5,   y/2 , -z/2
-        );
-    text(xwidth.pretty(), 0, y/2+10, -z/2);
-    line( -(x/2), y/2 + 5, -z/2
-        ,   x/2 , y/2 + 5, -z/2
-        );
-    text(ywidth.pretty(), x/2+10, 0, -z/2);
-
-drawPart_abort:
-  popMatrix();
-}
-
-
-
 /***********************************************************
  *
- * Log class
- * Records events to the app's debug text area
- *
- **********************************************************/
-
-class Log {
-  var m_textarea;
-  int m_msg_num;
-
-  Log() {
-    m_textarea = document.getElementById("app-log");
-    m_msgnum = 1;
-  }
-
-  void log(string s) {
-    m_textarea.value = (m_msg_num + ": " + s + "\n" + m_textarea.value);
-    m_msg_num++;
-  }
-}
-
-
-
-/***********************************************************
- *
- * Vector class
- * Some simple vector operations supported
+ * View classes
  *
  **********************************************************/
 
 class Vec3D {
+  /* remember: left-handed coordinate frame! */
   float x;
   float y;
   float z;
@@ -287,15 +258,6 @@ class Vec3D {
   }
 }
 
-
-
-/***********************************************************
- *
- * Camera class
- * The window into the model
- *
- **********************************************************/
-
 class GeneralCamera {
   /* remember: left-handed coordinate frame! */
   Vec3D m_e1; /* right ("x") */
@@ -314,17 +276,21 @@ class GeneralCamera {
     m_zoom_speed = 1;
     m_tilt_speed = PI / 6 * 0.01;
     m_translate_speed = PI / 6 * 0.01;
+
+    gotoDefault();
   }
 
   void gotoDefault() {
     m_e1 = new Vec3D(1, 0, 0); /* right ("x") */
     m_e2 = new Vec3D(0, 1, 0); /* zoom ("y") */
     m_e3 = new Vec3D(0, 0, -1); /* up ("z") */
-    m_zoom = 500;
+    m_zoom = 600;
 
     m_tilt = 0;
 
     m_center = new Vec3D(0, 0, 0);
+
+    translate(70, 180);
   }
 
   void translate(float dX, float dZ) {
@@ -344,8 +310,6 @@ class GeneralCamera {
         m_e1.rotateAbout(axis, angle);
         m_e2.rotateAbout(axis, angle);
         m_e3.rotateAbout(axis, angle);
-
-        the_log.log("translate by (" + dX + ", " + dZ + ") " + angle);
       }
     }
     else {
@@ -359,16 +323,12 @@ class GeneralCamera {
       m_e1.rotateAbout(axis, angle);
       m_e2.rotateAbout(axis, angle);
       m_e3.rotateAbout(axis, angle);
-
-      the_log.log("translate by (" + dX + ", " + dZ + ") " + angle_of_rotation + " " + angle);
     }
   }
 
   void tilt(float dY) {
     m_e1.rotateAbout(m_e2, dY * m_tilt_speed);
     m_e3.rotateAbout(m_e2, dY * m_tilt_speed);
-
-    the_log.log("tilt by " + dY);
   }
 
   void zoom(float steps) {
@@ -377,8 +337,6 @@ class GeneralCamera {
     m_zoom += zoom_velocity;
     if (m_zoom < 75)
       m_zoom = 75;
-
-    the_log.log("zoom by " + zoom_velocity);
   }
 
   void switchTo() {
@@ -391,6 +349,142 @@ class GeneralCamera {
 }
 
 
+interface WindowView {
+  void mouseDragged();
+  void draw();
+}
+
+class PartView implements WindowView {
+  Project proj;
+  string PRT_partname;
+  GeneralCamera camera;
+
+  PartView(Project in_proj, string in_PRT_partname) {
+    proj = in_proj;
+    PRT_partname = in_PRT_partname;
+    camera = new GeneralCamera();
+  }
+
+  void mouseDragged() {
+    if (mouseButton == LEFT) {
+      camera.translate(pmouseX - mouseX, mouseY - pmouseY);
+    }
+    else if (mouseButton == CENTER) {
+      camera.tilt(mouseX - pmouseX);
+      camera.zoom(pmouseY - mouseY);
+    }
+  }
+
+  void drawPart() {
+    pushMatrix();
+      stroke(255);
+      fill(127, 127, 127, 127);
+
+      translate(0, 0, 0);
+
+      /* fetch part */
+      Part part = proj.parts.get(PRT_partname);
+      if (null == part) goto drawPart_abort;
+
+      Dimension xwidth = proj.dimensions.get(part.DIM_xwidth);
+      Dimension ywidth = proj.dimensions.get(part.DIM_ywidth);
+      if (null == xwidth || null == ywidth) goto drawPart_abort;
+
+      Material mat = proj.materials.get(part.MAT_material);
+      if (null == mat) goto drawPart_abort;
+
+      Dimension zwidth = proj.dimensions.get(mat.DIM_thickness);
+      if (null == zwidth) goto drawPart_abort;
+
+      float x = xwidth.P3Dval();
+      float y = ywidth.P3Dval();
+      float z = zwidth.P3Dval();
+
+      /* draw the part */
+      box(x, y, z);
+
+      /* draw the widths */
+      stroke(0, 255, 255);
+      fill(0, 255, 255, 255);
+      line( x/2 + 5, -(y/2), -z/2
+          , x/2 + 5,   y/2 , -z/2
+          );
+      text(xwidth.pretty(), 0, y/2+10, -z/2);
+      line( -(x/2), y/2 + 5, -z/2
+          ,   x/2 , y/2 + 5, -z/2
+          );
+      text(ywidth.pretty(), x/2+10, 0, -z/2);
+
+  drawPart_abort:
+    popMatrix();
+  }
+
+  void draw() {
+    background(50);
+    lights();
+
+    hint(DISABLE_DEPTH_TEST);
+
+    textFont(createFont("Courier New"));
+    textSize(proj.pcfg.font_size);
+
+    camera.switchTo();
+    // ortho(-canvas_width/4, canvas_width/4, -canvas_height/4, canvas_height/4, -1000, 1000);
+
+    /* draw coordinate axis */
+    pushMatrix();
+      stroke(255, 0, 0);
+      line(0, 0, 0, 1000, 0, 0);
+      stroke(127, 0, 0);
+      line(0, 0, 0, -1000, 0, 0);
+
+      stroke(0, 255, 0);
+      line(0, 0, 0, 0, 1000, 0);
+      stroke(0, 127, 0);
+      line(0, 0, 0, 0, -1000, 0);
+
+
+      stroke(0, 0, 255);
+      line(0, 0, 0, 0, 0, 1000);
+      stroke(0, 0, 127);
+      line(0, 0, 0, 0, 0, -1000);
+    popMatrix();
+
+    drawPart();
+  }
+}
+
+class ProjectView implements WindowView {
+  Project proj;
+
+  ArrayList<WindowView> windows;
+  WindowView current_view;
+
+  ProjectView(Project in_proj, string initial_partview) {
+    proj = in_proj;
+    windows = new ArrayList<WindowView>();
+
+    current_view = new PartView(in_proj, initial_partview);
+    windows.add(current_view);
+  }
+
+  void mouseDragged() {
+    current_view.mouseDragged();
+  }
+
+  void draw() {
+    current_view.draw();
+  }
+}
+
+
+
+
+
+
+
+
+
 
 /***********************************************************
  *
@@ -398,69 +492,26 @@ class GeneralCamera {
  *
  **********************************************************/
 
-Log the_log = new Log();
-
-GeneralCamera cam = new GeneralCamera();
-
-void draw() {
-  noStroke();
-  background(50);
-  lights();
-
-  hint(DISABLE_DEPTH_TEST);
-
-  Project proj = new Project(new ProjectConfig(), "a chair");
-
-  textFont(createFont("Courier New"));
-  textSize(proj.pcfg.font_size);
-
-  if (!proj.addDimension("0.75in ply thickness", 0.75, UNIT_INCHES)) goto draw_abort;
-  if (!proj.addMaterial("0.75in ply", "0.75in ply thickness")) goto draw_abort;
-  if (!proj.addDimension("p1 xwidth", 18, UNIT_INCHES)) goto draw_abort;
-  if (!proj.addDimension("p1 ywidth", 3.5, UNIT_INCHES)) goto draw_abort;
-  if (!proj.addPart("part1", "0.75in ply", "p1 xwidth", "p1 ywidth")) goto draw_abort;
-
-  cam.switchTo();
-  // ortho(-canvas_width/4, canvas_width/4, -canvas_height/4, canvas_height/4, -1000, 1000);
-
-  /* draw coordinate axis */
-  pushMatrix();
-    stroke(255, 0, 0);
-    line(0, 0, 0, 1000, 0, 0);
-    stroke(127, 0, 0);
-    line(0, 0, 0, -1000, 0, 0);
-
-    stroke(0, 255, 0);
-    line(0, 0, 0, 0, 1000, 0);
-    stroke(0, 127, 0);
-    line(0, 0, 0, 0, -1000, 0);
-
-
-    stroke(0, 0, 255);
-    line(0, 0, 0, 0, 0, 1000);
-    stroke(0, 0, 127);
-    line(0, 0, 0, 0, 0, -1000);
-  popMatrix();
-
-  /* draw part */
-  drawPart(proj, "part1");
-
-draw_abort:
-  return;
-}
+ProjectView proj_view = null;
 
 void setup () {
+  Project proj = new Project(new ProjectConfig(), "a chair");
+  proj.addDimension("0.75in ply thickness", 0.75, UNIT_INCHES);
+  proj.addMaterial("0.75in ply", "0.75in ply thickness");
+  proj.addDimension("p1 xwidth", 18, UNIT_INCHES);
+  proj.addDimension("p1 ywidth", 3.5, UNIT_INCHES);
+  proj.addPart("part1", "0.75in ply", "p1 xwidth", "p1 ywidth");
+
+  proj_view = new ProjectView(proj, "part1");
+
   size(canvas_width, canvas_height, P3D);
   frameRate(120);
-  cam.gotoDefault();
 }
 
 void mouseDragged() {
-  if (mouseButton == LEFT) {
-    cam.translate(pmouseX - mouseX, mouseY - pmouseY);
-  }
-  else if (mouseButton == CENTER) {
-    cam.tilt(mouseX - pmouseX);
-    cam.zoom(pmouseY - mouseY);
-  }
+  proj_view.mouseDragged();
+}
+
+void draw() {
+  proj_view.draw();
 }
