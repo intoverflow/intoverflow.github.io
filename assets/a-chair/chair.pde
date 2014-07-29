@@ -9,16 +9,14 @@ canvas_height = 576;
  **********************************************************/
 
 class Log {
-  var m_textarea;
   int m_msg_num;
 
   Log() {
-    m_textarea = document.getElementById("app-log");
     m_msgnum = 1;
   }
 
   void log(string s) {
-    m_textarea.value = (m_msg_num + ": " + s + "\n" + m_textarea.value);
+    ui_log(m_msg_num + ": " + s);
     m_msg_num++;
   }
 }
@@ -350,6 +348,7 @@ class GeneralCamera {
 
 
 interface WindowView {
+  string viewName();
   void mouseDragged();
   void draw();
 }
@@ -363,6 +362,10 @@ class PartView implements WindowView {
     proj = in_proj;
     PRT_partname = in_PRT_partname;
     camera = new GeneralCamera();
+  }
+
+  string viewName() {
+    return PRT_partname;
   }
 
   void mouseDragged() {
@@ -457,15 +460,29 @@ class PartView implements WindowView {
 class ProjectView implements WindowView {
   Project proj;
 
-  ArrayList<WindowView> windows;
+  HashMap<string, WindowView> windows;
   WindowView current_view;
 
-  ProjectView(Project in_proj, string initial_partview) {
+  ProjectView(Project in_proj, WindowView w) {
     proj = in_proj;
-    windows = new ArrayList<WindowView>();
+    windows = new HashMap<string, WindowView>();
 
-    current_view = new PartView(in_proj, initial_partview);
-    windows.add(current_view);
+    addView(w);
+    selectView(w.viewName());
+  }
+
+  void selectView(string name) {
+    current_view = windows.get(name);
+    ui_set_selected_view(name);
+  }
+
+  void addView(WindowView v) {
+    windows.put(v.viewName(), v);
+    ui_add_view(v.viewName());
+  }
+
+  string viewName() {
+    return current_view.viewName();
   }
 
   void mouseDragged() {
@@ -473,15 +490,13 @@ class ProjectView implements WindowView {
   }
 
   void draw() {
+    /* check to see if the current view is correct */
+    if (ui_name_of_selected_view() != viewName())
+      selectView(ui_name_of_selected_view());
+
     current_view.draw();
   }
 }
-
-
-
-
-
-
 
 
 
@@ -495,17 +510,30 @@ class ProjectView implements WindowView {
 ProjectView proj_view = null;
 
 void setup () {
+  the_log.log("info: starting...");
+
   Project proj = new Project(new ProjectConfig(), "a chair");
+
   proj.addDimension("0.75in ply thickness", 0.75, UNIT_INCHES);
   proj.addMaterial("0.75in ply", "0.75in ply thickness");
-  proj.addDimension("p1 xwidth", 18, UNIT_INCHES);
-  proj.addDimension("p1 ywidth", 3.5, UNIT_INCHES);
-  proj.addPart("part1", "0.75in ply", "p1 xwidth", "p1 ywidth");
 
-  proj_view = new ProjectView(proj, "part1");
+  proj.addDimension("left-cog xwidth", 18, UNIT_INCHES);
+  proj.addDimension("left-cog ywidth", 3.5, UNIT_INCHES);
+  proj.addPart("left-cog", "0.75in ply", "left-cog xwidth", "left-cog ywidth");
+
+  proj.addDimension("upper-flange xwidth", 4, UNIT_INCHES);
+  proj.addDimension("upper-flange ywidth", 7, UNIT_INCHES);
+  proj.addPart("upper-flange", "0.75in ply", "upper-flange xwidth", "upper-flange ywidth");
+
+  proj_view = new ProjectView(proj, new PartView(proj, "left-cog"));
+  proj_view.addView(new PartView(proj, "upper-flange"))
+
+  proj_view.selectView("upper-flange");
 
   size(canvas_width, canvas_height, P3D);
   frameRate(120);
+
+  the_log.log("info: started");
 }
 
 void mouseDragged() {
