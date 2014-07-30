@@ -298,28 +298,22 @@ class Dimension {
 }
 
 class Material {
-  ProjectConfig pcfg;
-
   string name;
   string DIM_thickness;
 
-  Material(ProjectConfig in_pcfg, string in_name, string in_thickness) {
-    pcfg = in_pcfg;
+  Material(string in_name, string in_thickness) {
     name = in_name;
     DIM_thickness = in_thickness;
   }
 }
 
-class Part {
-  ProjectConfig pcfg;
-
+class Sheet {
   string name;
   string MAT_material;
   string DIM_xwidth;
   string DIM_ywidth;
 
-  Part(ProjectConfig in_pcfg, string in_name, string in_material, string in_xwidth, string in_ywidth) {
-    pcfg = in_pcfg;
+  Sheet(string in_name, string in_material, string in_xwidth, string in_ywidth) {
     name = in_name;
     MAT_material = in_material;
     DIM_xwidth = in_xwidth;
@@ -333,7 +327,7 @@ class Project {
   string name;
   FunHashMap<string, Dimension> dimensions;
   FunHashMap<string, Material> materials;
-  FunHashMap<string, Part> parts;
+  FunHashMap<string, Sheet> sheets;
 
   Project(ProjectConfig in_pcfg, string in_name) {
     pcfg = in_pcfg;
@@ -341,19 +335,19 @@ class Project {
 
     dimensions = new FunHashMap<string, Dimension>();
     materials  = new FunHashMap<string, Material>();
-    parts      = new FunHashMap<string, Part> ();
+    sheets     = new FunHashMap<string, Sheet> ();
   }
 
   Project(Project copy_from, string in_name
          , FunHashMap<string, Dimension> in_dimensions
          , FunHashMap<string, Material> in_materials
-         , FunHashMap<string, Part> in_parts)
+         , FunHashMap<string, Sheet> in_sheets)
   {
     pcfg = copy_from.pcfg;
     name       = (null == in_name)       ? copy_from.name       : in_name;
     dimensions = (null == in_dimensions) ? copy_from.dimensions : in_dimensions;
     materials  = (null == in_materials)  ? copy_from.materials  : in_materials;
-    parts      = (null == in_parts)      ? copy_from.parts      : in_parts;
+    sheets     = (null == in_sheets)     ? copy_from.sheets     : in_sheets;
   }
 
   Project addDimension(ErrorStack err, string in_name, float in_val, int in_uom) {
@@ -382,7 +376,7 @@ class Project {
       return null;
     }
 
-    Material m = new Material(pcfg, in_name, in_thickness);
+    Material m = new Material(in_name, in_thickness);
     FunHashMap<string, Material> new_materials = materials.add(err, in_name, m);
     if (err.isFail()) {
       err.propagate("Project_addMaterial", in_name);
@@ -393,7 +387,7 @@ class Project {
     return np;
   }
 
-  Project addPart(ErrorStack err, string in_name, string in_material, string in_xwidth, string in_ywidth) {
+  Project addSheet(ErrorStack err, string in_name, string in_material, string in_xwidth, string in_ywidth) {
     if (err.isFail())
       return null;
     the_log.log("info: addPart " + in_name);
@@ -411,14 +405,14 @@ class Project {
       return null;
     }
 
-    Part p = new Part(pcfg, in_name, in_material, in_xwidth, in_ywidth);
-    FunHashMap<string, Part> new_parts = parts.add(err, in_name, p);
+    Sheet p = new Sheet(in_name, in_material, in_xwidth, in_ywidth);
+    FunHashMap<string, Sheet> new_sheets = sheets.add(err, in_name, p);
     if (err.isFail()) {
       err.propagate("Project_addPart", in_name);
       return null;
     }
 
-    Project np = (null == new_parts) ? null : new Project(this, null, null, null, new_parts);
+    Project np = (null == new_sheets) ? null : new Project(this, null, null, null, new_sheets);
     return np;
   }
 }
@@ -589,19 +583,19 @@ interface WindowView {
   void draw();
 }
 
-class PartView implements WindowView {
+class SheetView implements WindowView {
   Project proj;
-  string PRT_partname;
+  string SHT_sheetname;
   GeneralCamera camera;
 
-  PartView(Project in_proj, string in_PRT_partname) {
+  SheetView(Project in_proj, string in_SHT_sheetname) {
     proj = in_proj;
-    PRT_partname = in_PRT_partname;
+    SHT_sheetname = in_SHT_sheetname;
     camera = new GeneralCamera();
   }
 
   string viewName() {
-    return PRT_partname;
+    return SHT_sheetname;
   }
 
   void mouseDragged() {
@@ -614,32 +608,24 @@ class PartView implements WindowView {
     }
   }
 
-  void drawPart() {
+  void drawSheet() {
     pushMatrix();
       stroke(255);
       fill(127, 127, 127, 127);
 
       translate(0, 0, 0);
 
-      /* fetch part */
-        Part part = proj.parts.lookup(PRT_partname);
-        if (null == part) goto drawPart_abort;
-
-        Dimension xwidth = proj.dimensions.lookup(part.DIM_xwidth);
-        Dimension ywidth = proj.dimensions.lookup(part.DIM_ywidth);
-        if (null == xwidth || null == ywidth) goto drawPart_abort;
-
-        Material mat = proj.materials.lookup(part.MAT_material);
-        if (null == mat) goto drawPart_abort;
-
-        Dimension zwidth = proj.dimensions.lookup(mat.DIM_thickness);
-        if (null == zwidth) goto drawPart_abort;
-
+      /* fetch sheet */
+      Sheet sheet = proj.sheets.lookup(SHT_sheetname);
+      Dimension xwidth = proj.dimensions.lookup(sheet.DIM_xwidth);
+      Dimension ywidth = proj.dimensions.lookup(sheet.DIM_ywidth);
+      Material mat = proj.materials.lookup(sheet.MAT_material);
+      Dimension zwidth = proj.dimensions.lookup(mat.DIM_thickness);
       float x = xwidth.P3Dval();
       float y = ywidth.P3Dval();
       float z = zwidth.P3Dval();
 
-      /* draw the part */
+      /* draw the sheet */
       box(x, y, z);
 
       /* draw the widths */
@@ -653,8 +639,6 @@ class PartView implements WindowView {
           ,   x/2 , y/2 + 5, -z/2
           );
       text(ywidth.pretty(), x/2+10, 0, -z/2);
-
-  drawPart_abort:
     popMatrix();
   }
 
@@ -689,7 +673,7 @@ class PartView implements WindowView {
       line(0, 0, 0, 0, 0, -1000);
     popMatrix();
 
-    drawPart();
+    drawSheet();
   }
 }
 
@@ -702,13 +686,14 @@ class ProjectView implements WindowView {
   ProjectView(Project in_proj, WindowView w) {
     proj = in_proj;
     windows = new HashMap<string, WindowView>();
-
     addView(w);
     selectView(w.viewName());
   }
 
   void selectView(string name) {
     current_view = windows.get(name);
+    if (null == current_view)
+      return;
     ui_set_selected_view(name);
   }
 
@@ -729,7 +714,6 @@ class ProjectView implements WindowView {
     /* check to see if the current view is correct */
     if (ui_name_of_selected_view() != viewName())
       selectView(ui_name_of_selected_view());
-
     current_view.draw();
   }
 }
@@ -758,21 +742,22 @@ void setup () {
 
   proj = update_if_new(proj, proj.addDimension(err, "0.75in ply thickness", 0.75, UNIT_INCHES) );
   proj = update_if_new(proj, proj.addMaterial(err, "0.75in ply", "0.75in ply thickness") );
+  proj = update_if_new(proj, proj.addDimension(err, "0.5in ply thickness", 0.5, UNIT_INCHES) );
+  proj = update_if_new(proj, proj.addMaterial(err, "0.5in ply", "0.5in ply thickness") );
 
-  proj = update_if_new(proj, proj.addDimension(err, "left-cog xwidth", 18, UNIT_INCHES) );
-  proj = update_if_new(proj, proj.addDimension(err, "left-cog ywidth", 3.5, UNIT_INCHES) );
-  proj = update_if_new(proj, proj.addPart(err, "left-cog", "0.75in ply", "left-cog xwidth", "left-cog ywidth") );
+  proj = update_if_new(proj, proj.addDimension(err, "sheet 18x12in xwidth", 18, UNIT_INCHES) );
+  proj = update_if_new(proj, proj.addDimension(err, "sheet 18x12in ywidth", 12, UNIT_INCHES) );
+  proj = update_if_new(proj, proj.addSheet(err, "sheet 18x12x0.75in ply", "0.75in ply", "sheet 18x12in xwidth", "sheet 18x12in ywidth") );
 
-  proj = update_if_new(proj, proj.addDimension(err, "upper-flange xwidth", 4, UNIT_INCHES) );
-  proj = update_if_new(proj, proj.addDimension(err, "upper-flange ywidth", 7, UNIT_INCHES) );
-
-  proj = update_if_new(proj, proj.addPart(err, "upper-flange", "0.75in ply", "upper-flange xwidth", "upper-flange ywidth") );
+  proj = update_if_new(proj, proj.addDimension(err, "sheet 4x4in xwidth", 4, UNIT_INCHES) );
+  proj = update_if_new(proj, proj.addDimension(err, "sheet 4x4in ywidth", 4, UNIT_INCHES) );
+  proj = update_if_new(proj, proj.addSheet(err, "sheet 4x4x0.5in ply", "0.5in ply", "sheet 4x4in xwidth", "sheet 4x4in ywidth") );
 
   if (!err.isFail()) {
-    proj_view = new ProjectView(proj, new PartView(proj, "left-cog"));
-    proj_view.addView(new PartView(proj, "upper-flange"))
+    proj_view = new ProjectView(proj, new SheetView(proj, "sheet 18x12x0.75in ply"));
+    proj_view.addView(new SheetView(proj, "sheet 4x4x0.5in ply"));
 
-    proj_view.selectView("upper-flange");
+    proj_view.selectView("sheet 4x4x0.5in ply");
 
     size(canvas_width, canvas_height, P3D);
     frameRate(120);
