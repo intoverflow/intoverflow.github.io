@@ -684,38 +684,66 @@ class SheetView implements WindowView {
 }
 
 class ProjectView implements WindowView {
-  HashMap<string, WindowView> windows;
+  FunHashMap<string, WindowView> windows;
   WindowView current_view;
 
+  int ref_count;
+
   ProjectView() {
-    windows = new HashMap<string, WindowView>();
+    windows = new FunHashMap<string, WindowView>();
+    current_view = null;
+    ref_count = 0;
+  }
+
+  ProjectView(FunHashMap<string, WindowView> in_windows) {
+    windows = in_windows;
+    current_view = null;
+    ref_count = 0;
   }
 
   void selectView(string name) {
-    current_view = windows.get(name);
-    if (null == current_view)
-      return;
+    current_view = windows.lookup(name);
     ui_set_selected_view(name);
   }
 
-  void addView(WindowView v) {
-    windows.put(v.viewName(), v);
+  ProjectView addView(ErrorStack err, WindowView v) {
+    if (err.isFail())
+      return null;
+
+    FunHashMap<string, WindowView> new_windows = windows.add(err, v.viewName(), v);
+    if (err.isFail()) {
+      err.propagate("ProjectView_addView", "adding view '" + v.viewName() + "'");
+      return null;
+    }
     ui_add_view(v.viewName());
+
+    if (ref_count <= 1) {
+      windows = new_windows;
+      return null;
+    }
+
+    ProjectView n = new ProjectView(new_windows);
+    if (null != current_view)
+      n.selectView(viewName());
+
+    return n;
   }
 
   string viewName() {
-    return current_view.viewName();
+    return (null != current_view) ? current_view.viewName() : "[master view]";
   }
 
   void mouseDragged() {
-    current_view.mouseDragged();
+    if (null != current_view)
+      current_view.mouseDragged();
   }
 
   void draw(Project proj) {
     /* check to see if the current view is correct */
     if (ui_name_of_selected_view() != viewName())
       selectView(ui_name_of_selected_view());
-    current_view.draw(proj);
+    if (null != current_view)
+      current_view.draw(proj);
   }
 }
 
@@ -739,6 +767,8 @@ class ProjectTree {
     view = in_view;
     parent = null;
     children = new ArrayList<ProjectTree>();
+
+    view.ref_count++;
   }
 
   ProjectTree addChild(Project in_child, ProjectView in_view) {
@@ -752,11 +782,14 @@ class ProjectTree {
 
 interface Command {
   int commandCode();
+  string pretty();
 }
 
 int CMD_CODE_ADD_DIMENSION  = 0x1001;
 int CMD_CODE_ADD_MATERIAL   = 0x1002;
 int CMD_CODE_ADD_SHEET      = 0x1003;
+
+int CMD_CODE_VIEW_SELECT    = 0x1103;
 
 class CmdAddDimension implements Command {
   string name;
@@ -770,6 +803,10 @@ class CmdAddDimension implements Command {
   }
 
   int commandCode() { return CMD_CODE_ADD_DIMENSION; }
+
+  string pretty() {
+    return "dimension add: '" + name + "' '" + val + "' '" + unit_of_measure + "'";
+  }
 }
 
 class CmdAddMaterial implements Command {
@@ -782,6 +819,10 @@ class CmdAddMaterial implements Command {
   }
 
   int commandCode() { return CMD_CODE_ADD_MATERIAL; }
+
+  string pretty() {
+    return "material add: '" + name + "' '" + thickness + "'";
+  }
 }
 
 class CmdAddSheet implements Command {
@@ -798,6 +839,24 @@ class CmdAddSheet implements Command {
   }
 
   int commandCode() { return CMD_CODE_ADD_SHEET; }
+
+  string pretty() {
+    return "sheet add: '" + name + "' '" + material + "' '" + xwidth + "' '" + ywidth + "'";
+  }
+}
+
+class CmdViewSelect implements Command {
+  string view_name;
+
+  CmdViewSelect(string in_view_name) {
+    view_name = in_view_name;
+  }
+
+  int commandCode() { return CMD_CODE_VIEW_SELECT; }
+
+  string pretty() {
+    return "view select: '" + view_name + "'";
+  }
 }
 
 class ProjectController {
@@ -826,7 +885,7 @@ class ProjectController {
       case CMD_CODE_ADD_DIMENSION:
         {
           CmdAddDimension ccmd = (CmdAddDimension)cmd;
-          np = project_tree.proj.addDimension(err, ccmd.name, ccmd.val, ccmd.unit_of_measure);
+          np = project().addDimension(err, ccmd.name, ccmd.val, ccmd.unit_of_measure);
           if (err.isFail()) {
             err.propagate("ProjectController_processCommand", "adding dimension '" + ccmd.name + "'");
             return;
@@ -836,7 +895,7 @@ class ProjectController {
       case CMD_CODE_ADD_MATERIAL:
         {
           CmdAddMaterial ccmd = (CmdAddMaterial)cmd;
-          np = project_tree.proj.addMaterial(err, ccmd.name, ccmd.thickness);
+          np = project().addMaterial(err, ccmd.name, ccmd.thickness);
           if (err.isFail()) {
             err.propagate("ProjectController_processCommand", "adding material '" + ccmd.name + "'");
             return;
@@ -846,13 +905,23 @@ class ProjectController {
       case CMD_CODE_ADD_SHEET:
         {
           CmdAddSheet ccmd = (CmdAddSheet)cmd;
-          np = project_tree.proj.addSheet(err, ccmd.name, ccmd.material, ccmd.xwidth, ccmd.ywidth);
+          np = project().addSheet(err, ccmd.name, ccmd.material, ccmd.xwidth, ccmd.ywidth);
           if (err.isFail()) {
             err.propagate("ProjectController_processCommand", "adding sheet '" + ccmd.name + "'");
             return;
           }
-          project_tree.view.addView(new SheetView(ccmd.name));
+          nv = view().addView(err, new SheetView(ccmd.name));
+          if (err.isFail()) {
+            err.propagate("ProjectController_processCommand", "adding view '" + ccmd.name + "'");
+            return;
+          }
           project_tree.view.selectView(ccmd.name);
+        }
+        break;
+      case CMD_CODE_VIEW_SELECT:
+        {
+          CmdViewSelect ccmd = (CmdViewSelect)cmd;
+          nv = view().selectView(ccmd.view_name);
         }
         break;
       default:
@@ -860,8 +929,10 @@ class ProjectController {
         return;
     }
 
+    the_log.log("info: processed command '" + cmd.pretty() + "'");
+
     if (null != np || null != nv)
-      project_tree = project_tree.addChild((null == np) ? project_tree.project : np, (null == nv) ? project_tree.view : nv);
+      project_tree = project_tree.addChild((null == np) ? project() : np, (null == nv) ? view() : nv);
   }
 }
 
@@ -895,6 +966,7 @@ void setup () {
   proj_controller.processCommand(err, new CmdAddDimension("sheet 4x4in width", 4, UNIT_INCHES));
   proj_controller.processCommand(err, new CmdAddSheet("sheet 4x4x0.5in ply", "0.5in ply", "sheet 4x4in width", "sheet 4x4in width"));
 
+  proj_controller.processCommand(err, new CmdViewSelect("sheet 18x12x0.75in ply"));
 
   if (!err.isFail()) {
     size(canvas_width, canvas_height, P3D);
