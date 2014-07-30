@@ -32,6 +32,210 @@ Log the_log = new Log();
  *
  **********************************************************/
 
+int ERR_OK        = 0;
+int ERR_PROPAGATE = - 0x1000;
+
+int ERR_FunHashMap_add_COLLISION    = - 0x1001;
+int ERR_FunHashMap_add_NULL_VALUE   = - 0x1002;
+int ERR_FunHashMap_modify_NOTFOUND  = - 0x1003;
+
+int ERR_Project_addMaterial_UNKNOWN_THICKNESS = - 0x1101;
+int ERR_Project_addPart_UNKNOWN_MATERIAL      = - 0x1121;
+int ERR_Project_addPart_UNKNOWN_DIM_XWIDTH    = - 0x1122;
+int ERR_Project_addPart_UNKNOWN_DIM_YWIDTH    = - 0x1123;
+
+class ErrorStack {
+  int error;
+  string from;
+  string msg;
+  ErrorStack inner_err;
+
+  ErrorStack() {
+    from = null;
+    error = ERR_OK;
+    msg = null;
+    inner_err = null;
+  }
+
+  void log(Log l) {
+    switch (error) {
+      case ERR_OK:
+        l.log("success");
+        break;
+      case ERR_PROPAGATE:
+        l.log(from + ": propagating while '" + msg + "'");
+        inner_err.log(l);
+        break;
+      default:
+        l.log(from + ": error " + error.toString(16) + " " + msg);
+        break;
+    }
+  }
+
+  void propagate(string in_from, string in_msg) {
+    ErrorStack new_inner = new ErrorStack();
+    new_inner.error = error;
+    new_inner.from = from;
+    new_inner.msg = msg;
+    new_inner.inner_err = inner_err;
+
+    error = ERR_PROPAGATE;
+    from = in_from;
+    msg = in_msg;
+    inner_err = new_inner;
+  }
+
+  boolean isFail() {
+    return ERR_OK != error;
+  }
+
+  void error_FunHashMap_add_COLLISION(string k) {
+    from = "FunHashMap_add";
+    error = ERR_FunHashMap_add_COLLISION;
+    msg = k;
+  }
+
+  void error_FunHashMap_add_NULL_VALUE(string k) {
+    from = "FunHashMap_add";
+    error = ERR_FunHashMap_add_NULL_VALUE;
+    msg = k;
+  }
+
+  void error_FunHashMap_modify_NOTFOUND(string k) {
+    from = "FunHashMap_modify";
+    error = ERR_FunHashMap_modify_NOTFOUND;
+    msg = k;
+  }
+
+  void error_Project_addMaterial_UNKNOWN_THICKNESS(string thickness) {
+    from = "Project_addMaterial";
+    error = ERR_Project_addMaterial_UNKNOWN_THICKNESS;
+    msg = "Unknown thickness dimension '" + thickness + "'";
+  }
+
+  void error_Project_addPart_UNKNOWN_MATERIAL(string in_name, string material) {
+    from = "Project_addPart";
+    error = ERR_Project_addPart_UNKNOWN_MATERIAL;
+    msg = "Unknown material '" + material + "' for part '" + in_name + "'";
+  }
+
+  void error_Project_addPart_UNKNOWN_DIM_XWIDTH(string in_name, string dimension) {
+    from = "Project_addPart";
+    error = ERR_Project_addPart_UNKNOWN_DIM_XWIDTH;
+    msg = "Unknown xwidth dimension '" + dimension + "' for part '" + in_name + "'";
+  }
+
+  void error_Project_addPart_UNKNOWN_DIM_YWIDTH(string in_name, string dimension) {
+    from = "Project_addPart";
+    error = ERR_Project_addPart_UNKNOWN_DIM_YWIDTH;
+    msg = "Unknown ywidth dimension '" + dimension + "' for part '" + in_name + "'";
+  }
+}
+
+interface EndoFunction<V> {
+  static V modify(ErrorStack err, V in);
+}
+
+class FunHashMap<K, V> {
+  int hash;
+  K key;
+  V val;
+  FunHashMap<K, V> next;
+
+  FunHashMap<K, V>() {
+    hash = 0;
+    key = null;
+    val = null;
+    next = null;
+  }
+
+  FunHashMap<K, V>(K k, V v, FunHashMap<K, V> tail) {
+    hash = k.hashCode();
+    key = k;
+    val = v;
+    next = tail;
+  }
+
+  boolean isNil() {
+    return (null == val) && (null == next);
+  }
+
+  boolean isCons() {
+    return (null != val) && (null != next);
+  }
+
+  FunHashMap<K, V> add(ErrorStack err, K n_key, V n_val) {
+    if (err.isFail())
+      return null;
+
+    if (null == n_val) {
+      err.error_FunHashMap_add_NULL_VALUE(n_key.toString());
+      return null;
+    }
+
+    /* make sure the key is not already defined */
+    if (isSet(n_key)) {
+      err.error_FunHashMap_add_COLLISION(n_key.toString());
+      return null;
+    }
+
+    /* add it in */
+    return new FunHashMap<K, V>(n_key, n_val, this);
+  }
+
+  V lookup(K in_key) {
+    int in_hash = in_key.hashCode();
+    for (FunHashMap<K, V> cur = this; cur != null && cur.isCons(); cur = cur.next) {
+      if (in_hash == cur.hash && in_key.equals(cur.key)) {
+        return cur.val;
+      }
+    }
+
+    return null;
+  }
+
+  boolean isSet(K in_key) {
+    return (null != lookup(in_key));
+  }
+
+  FunHashMap<K, V> modify(ErrorStack err, K in_key, EndoFunction<V> in_f) {
+    return modify(err, in_key, in_key.hashCode(), in_f);
+  }
+
+  FunHashMap<K, V> modify(ErrorStack err, K in_key, int in_hash, EndoFunction<V> in_f) {
+    if (err.isFail())
+      return null;
+
+    if (isNil()) {
+      err.error_FunHashMap_modify_NOTFOUND(in_key.toString());
+      return null;
+    }
+
+    boolean found = false;
+
+    if (in_hash == hash && in_key.equals(key)) {
+      found = true;
+
+      V new_val = in_f.modify(err, val);
+      if (err.isFail()) {
+        err.propagate("FunHashMap_modify", in_key.toString());
+        return null;
+      }
+
+      if (null != new_val) {
+        return new FunHashMap<K, V>(key, new_val, next);
+      }
+    }
+    else {
+      FunHashMap<K, V> new_next = next.modify(err, in_key, in_hash, in_f);
+      if (null != new_next)
+        return new FunHashMap<K, V>(key, val, new_next);
+    }
+
+    return null;
+  }
+}
+
 class ProjectConfig {
   /* Length in (P3D coordinates) of a 1cm line segment. */
   float fundamental_scale;
@@ -127,63 +331,95 @@ class Project {
   ProjectConfig pcfg;
 
   string name;
-  HashMap<string, Dimension> dimensions;
-  HashMap<string, Material> materials;
-  HashMap<string, Part> parts;
+  FunHashMap<string, Dimension> dimensions;
+  FunHashMap<string, Material> materials;
+  FunHashMap<string, Part> parts;
 
   Project(ProjectConfig in_pcfg, string in_name) {
     pcfg = in_pcfg;
     name = in_name;
 
-    dimensions = new HashMap<string, Dimension>();
-    materials  = new HashMap<string, Material>();
-    parts      = new HashMap<string, Part> ();
+    dimensions = new FunHashMap<string, Dimension>();
+    materials  = new FunHashMap<string, Material>();
+    parts      = new FunHashMap<string, Part> ();
   }
 
-  boolean addDimension(string in_name, float in_val, int in_uom) {
-    if (dimensions.containsKey(in_name)) {
-      the_log.log("Project.addDimension: that name is already taken '" + in_name + "'");
-      return false;
-    }
+  Project(Project copy_from, string in_name
+         , FunHashMap<string, Dimension> in_dimensions
+         , FunHashMap<string, Material> in_materials
+         , FunHashMap<string, Part> in_parts)
+  {
+    pcfg = copy_from.pcfg;
+    name       = (null == in_name)       ? copy_from.name       : in_name;
+    dimensions = (null == in_dimensions) ? copy_from.dimensions : in_dimensions;
+    materials  = (null == in_materials)  ? copy_from.materials  : in_materials;
+    parts      = (null == in_parts)      ? copy_from.parts      : in_parts;
+  }
+
+  Project addDimension(ErrorStack err, string in_name, float in_val, int in_uom) {
+    if (err.isFail())
+      return null;
+    the_log.log("info: addDimension " + in_name);
+
     Dimension d = new Dimension(pcfg, in_name, in_val, in_uom);
-    dimensions.put(in_name, d);
-    return true;
+    FunHashMap<string, Dimension> new_dimensions = dimensions.add(err, in_name, d);
+    if (err.isFail()) {
+      err.propagate("Project_addDimension", in_name);
+      return null;
+    }
+
+    Project np = (null == new_dimensions) ? null : new Project(this, null, new_dimensions, null, null);
+    return np;
   }
 
-  boolean addMaterial(string in_name, string in_thickness) {
-    if (!dimensions.containsKey(in_thickness)) {
-      the_log.log("Project.addMaterial: unknown dimension '" + in_thickness + "'");
-      return false;
+  Project addMaterial(ErrorStack err, string in_name, string in_thickness) {
+    if (err.isFail())
+      return null;
+    the_log.log("info: addMaterial " + in_name);
+
+    if (!dimensions.isSet(in_thickness)) {
+      err.error_Project_addMaterial_UNKNOWN_THICKNESS(in_name, in_thickness);
+      return null;
     }
-    if (materials.containsKey(in_name)) {
-      the_log.log("Project.addMaterial: that name is already taken '" + in_name + "'");
-      return false;
-    }
+
     Material m = new Material(pcfg, in_name, in_thickness);
-    materials.put(in_name, m);
-    return true;
+    FunHashMap<string, Material> new_materials = materials.add(err, in_name, m);
+    if (err.isFail()) {
+      err.propagate("Project_addMaterial", in_name);
+      return null;
+    }
+
+    Project np = (null == new_materials) ? null : new Project(this, null, null, new_materials, null);
+    return np;
   }
 
-  boolean addPart(string in_name, string in_material, string in_xwidth, string in_ywidth) {
-    if (!materials.containsKey(in_material)) {
-      the_log.log("Project.addPart: unknown material '" + in_material + "'");
-      return false;
+  Project addPart(ErrorStack err, string in_name, string in_material, string in_xwidth, string in_ywidth) {
+    if (err.isFail())
+      return null;
+    the_log.log("info: addPart " + in_name);
+
+    if (!materials.isSet(in_material)) {
+      err.error_Project_addPart_UNKNOWN_MATERIAL(in_name, in_material);
+      return null;
     }
-    if (!dimensions.containsKey(in_xwidth)) {
-      the_log.log("Project.addPart: unknown dimension (xwidth) '" + in_xwidth + "'");
-      return false;
+    if (!dimensions.isSet(in_xwidth)) {
+      err.error_Project_addPart_UNKNOWN_DIM_XWIDTH(in_name, in_xwidth);
+      return null;
     }
-    if (!dimensions.containsKey(in_ywidth)) {
-      the_log.log("Project.addPart: unknown dimension (ywidth) '" + in_ywidth + "'");
-      return false;
+    if (!dimensions.isSet(in_ywidth)) {
+      err.error_Project_addPart_UNKNOWN_DIM_YWIDTH(in_name, in_ywidth);
+      return null;
     }
-    if (parts.containsKey(in_name)) {
-      the_log.log("Project.addPart: that name is already taken '" + in_name + "'");
-      return false;
-    }
+
     Part p = new Part(pcfg, in_name, in_material, in_xwidth, in_ywidth);
-    parts.put(in_name, p);
-    return true;
+    FunHashMap<string, Part> new_parts = parts.add(err, in_name, p);
+    if (err.isFail()) {
+      err.propagate("Project_addPart", in_name);
+      return null;
+    }
+
+    Project np = (null == new_parts) ? null : new Project(this, null, null, null, new_parts);
+    return np;
   }
 }
 
@@ -386,18 +622,18 @@ class PartView implements WindowView {
       translate(0, 0, 0);
 
       /* fetch part */
-      Part part = proj.parts.get(PRT_partname);
-      if (null == part) goto drawPart_abort;
+        Part part = proj.parts.lookup(PRT_partname);
+        if (null == part) goto drawPart_abort;
 
-      Dimension xwidth = proj.dimensions.get(part.DIM_xwidth);
-      Dimension ywidth = proj.dimensions.get(part.DIM_ywidth);
-      if (null == xwidth || null == ywidth) goto drawPart_abort;
+        Dimension xwidth = proj.dimensions.lookup(part.DIM_xwidth);
+        Dimension ywidth = proj.dimensions.lookup(part.DIM_ywidth);
+        if (null == xwidth || null == ywidth) goto drawPart_abort;
 
-      Material mat = proj.materials.get(part.MAT_material);
-      if (null == mat) goto drawPart_abort;
+        Material mat = proj.materials.lookup(part.MAT_material);
+        if (null == mat) goto drawPart_abort;
 
-      Dimension zwidth = proj.dimensions.get(mat.DIM_thickness);
-      if (null == zwidth) goto drawPart_abort;
+        Dimension zwidth = proj.dimensions.lookup(mat.DIM_thickness);
+        if (null == zwidth) goto drawPart_abort;
 
       float x = xwidth.P3Dval();
       float y = ywidth.P3Dval();
@@ -509,31 +745,47 @@ class ProjectView implements WindowView {
 
 ProjectView proj_view = null;
 
+Project update_if_new(Project old, Project knew) {
+  return (null != knew) ? knew : old;
+}
+
 void setup () {
   the_log.log("info: starting...");
+  ErrorStack err = new ErrorStack();
 
+  /* make the project */
   Project proj = new Project(new ProjectConfig(), "a chair");
 
-  proj.addDimension("0.75in ply thickness", 0.75, UNIT_INCHES);
-  proj.addMaterial("0.75in ply", "0.75in ply thickness");
+  proj = update_if_new(proj, proj.addDimension(err, "0.75in ply thickness", 0.75, UNIT_INCHES) );
+  proj = update_if_new(proj, proj.addMaterial(err, "0.75in ply", "0.75in ply thickness") );
 
-  proj.addDimension("left-cog xwidth", 18, UNIT_INCHES);
-  proj.addDimension("left-cog ywidth", 3.5, UNIT_INCHES);
-  proj.addPart("left-cog", "0.75in ply", "left-cog xwidth", "left-cog ywidth");
+  proj = update_if_new(proj, proj.addDimension(err, "left-cog xwidth", 18, UNIT_INCHES) );
+  proj = update_if_new(proj, proj.addDimension(err, "left-cog ywidth", 3.5, UNIT_INCHES) );
+  proj = update_if_new(proj, proj.addPart(err, "left-cog", "0.75in ply", "left-cog xwidth", "left-cog ywidth") );
 
-  proj.addDimension("upper-flange xwidth", 4, UNIT_INCHES);
-  proj.addDimension("upper-flange ywidth", 7, UNIT_INCHES);
-  proj.addPart("upper-flange", "0.75in ply", "upper-flange xwidth", "upper-flange ywidth");
+  proj = update_if_new(proj, proj.addDimension(err, "upper-flange xwidth", 4, UNIT_INCHES) );
+  proj = update_if_new(proj, proj.addDimension(err, "upper-flange ywidth", 7, UNIT_INCHES) );
 
-  proj_view = new ProjectView(proj, new PartView(proj, "left-cog"));
-  proj_view.addView(new PartView(proj, "upper-flange"))
+  proj = update_if_new(proj, proj.addPart(err, "upper-flange", "0.75in ply", "upper-flange xwidth", "upper-flange ywidth") );
 
-  proj_view.selectView("upper-flange");
+  if (!err.isFail()) {
+    proj_view = new ProjectView(proj, new PartView(proj, "left-cog"));
+    proj_view.addView(new PartView(proj, "upper-flange"))
 
-  size(canvas_width, canvas_height, P3D);
-  frameRate(120);
+    proj_view.selectView("upper-flange");
 
-  the_log.log("info: started");
+    size(canvas_width, canvas_height, P3D);
+    frameRate(120);
+
+    the_log.log("info: started");
+  }
+  else {
+    the_log.log("ERROR: setup aborted");
+    err.propagate("setup", "initializing project");
+    err.log(the_log);
+  }
+
+  return;
 }
 
 void mouseDragged() {
