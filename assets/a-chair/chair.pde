@@ -40,9 +40,11 @@ int ERR_FunHashMap_add_NULL_VALUE   = - 0x1002;
 int ERR_FunHashMap_modify_NOTFOUND  = - 0x1003;
 
 int ERR_Project_addMaterial_UNKNOWN_THICKNESS = - 0x1101;
-int ERR_Project_addPart_UNKNOWN_MATERIAL      = - 0x1121;
-int ERR_Project_addPart_UNKNOWN_DIM_XWIDTH    = - 0x1122;
-int ERR_Project_addPart_UNKNOWN_DIM_YWIDTH    = - 0x1123;
+int ERR_Project_addSheet_UNKNOWN_MATERIAL     = - 0x1121;
+int ERR_Project_addSheet_UNKNOWN_DIM_XWIDTH   = - 0x1122;
+int ERR_Project_addSheet_UNKNOWN_DIM_YWIDTH   = - 0x1123;
+
+int ERR_ProjectController_processCommand_UNKNOWN_CMD_CODE   = - 0x1201;
 
 class ErrorStack {
   int error;
@@ -113,22 +115,28 @@ class ErrorStack {
     msg = "Unknown thickness dimension '" + thickness + "'";
   }
 
-  void error_Project_addPart_UNKNOWN_MATERIAL(string in_name, string material) {
-    from = "Project_addPart";
-    error = ERR_Project_addPart_UNKNOWN_MATERIAL;
-    msg = "Unknown material '" + material + "' for part '" + in_name + "'";
+  void error_Project_addSheet_UNKNOWN_MATERIAL(string in_name, string material) {
+    from = "Project_addSheet";
+    error = ERR_Project_addSheet_UNKNOWN_MATERIAL;
+    msg = "Unknown material '" + material + "' for sheet '" + in_name + "'";
   }
 
-  void error_Project_addPart_UNKNOWN_DIM_XWIDTH(string in_name, string dimension) {
-    from = "Project_addPart";
-    error = ERR_Project_addPart_UNKNOWN_DIM_XWIDTH;
-    msg = "Unknown xwidth dimension '" + dimension + "' for part '" + in_name + "'";
+  void error_Project_addSheet_UNKNOWN_DIM_XWIDTH(string in_name, string dimension) {
+    from = "Project_addSheet";
+    error = ERR_Project_addSheet_UNKNOWN_DIM_XWIDTH;
+    msg = "Unknown xwidth dimension '" + dimension + "' for sheet '" + in_name + "'";
   }
 
-  void error_Project_addPart_UNKNOWN_DIM_YWIDTH(string in_name, string dimension) {
-    from = "Project_addPart";
-    error = ERR_Project_addPart_UNKNOWN_DIM_YWIDTH;
-    msg = "Unknown ywidth dimension '" + dimension + "' for part '" + in_name + "'";
+  void error_Project_addSheet_UNKNOWN_DIM_YWIDTH(string in_name, string dimension) {
+    from = "Project_addSheet";
+    error = ERR_Project_addSheet_UNKNOWN_DIM_YWIDTH;
+    msg = "Unknown ywidth dimension '" + dimension + "' for sheet '" + in_name + "'";
+  }
+
+  void error_ProjectController_processCommand_UNKNOWN_CMD_CODE(int code) {
+    from = "ProjectController_processCommand";
+    error = ERR_ProjectController_processCommand_UNKNOWN_CMD_CODE;
+    msg = "Unknown command code " + code.toString(16);
   }
 }
 
@@ -390,25 +398,25 @@ class Project {
   Project addSheet(ErrorStack err, string in_name, string in_material, string in_xwidth, string in_ywidth) {
     if (err.isFail())
       return null;
-    the_log.log("info: addPart " + in_name);
+    the_log.log("info: addSheet " + in_name);
 
     if (!materials.isSet(in_material)) {
-      err.error_Project_addPart_UNKNOWN_MATERIAL(in_name, in_material);
+      err.error_Project_addSheet_UNKNOWN_MATERIAL(in_name, in_material);
       return null;
     }
     if (!dimensions.isSet(in_xwidth)) {
-      err.error_Project_addPart_UNKNOWN_DIM_XWIDTH(in_name, in_xwidth);
+      err.error_Project_addSheet_UNKNOWN_DIM_XWIDTH(in_name, in_xwidth);
       return null;
     }
     if (!dimensions.isSet(in_ywidth)) {
-      err.error_Project_addPart_UNKNOWN_DIM_YWIDTH(in_name, in_ywidth);
+      err.error_Project_addSheet_UNKNOWN_DIM_YWIDTH(in_name, in_ywidth);
       return null;
     }
 
     Sheet p = new Sheet(in_name, in_material, in_xwidth, in_ywidth);
     FunHashMap<string, Sheet> new_sheets = sheets.add(err, in_name, p);
     if (err.isFail()) {
-      err.propagate("Project_addPart", in_name);
+      err.propagate("Project_addSheet", in_name);
       return null;
     }
 
@@ -580,16 +588,14 @@ class GeneralCamera {
 interface WindowView {
   string viewName();
   void mouseDragged();
-  void draw();
+  void draw(Project proj);
 }
 
 class SheetView implements WindowView {
-  Project proj;
   string SHT_sheetname;
   GeneralCamera camera;
 
-  SheetView(Project in_proj, string in_SHT_sheetname) {
-    proj = in_proj;
+  SheetView(string in_SHT_sheetname) {
     SHT_sheetname = in_SHT_sheetname;
     camera = new GeneralCamera();
   }
@@ -608,7 +614,7 @@ class SheetView implements WindowView {
     }
   }
 
-  void drawSheet() {
+  void drawSheet(Project proj) {
     pushMatrix();
       stroke(255);
       fill(127, 127, 127, 127);
@@ -642,7 +648,7 @@ class SheetView implements WindowView {
     popMatrix();
   }
 
-  void draw() {
+  void draw(Project proj) {
     background(50);
     lights();
 
@@ -673,18 +679,15 @@ class SheetView implements WindowView {
       line(0, 0, 0, 0, 0, -1000);
     popMatrix();
 
-    drawSheet();
+    drawSheet(proj);
   }
 }
 
 class ProjectView implements WindowView {
-  Project proj;
-
   HashMap<string, WindowView> windows;
   WindowView current_view;
 
-  ProjectView(Project in_proj, WindowView w) {
-    proj = in_proj;
+  ProjectView(WindowView w) {
     windows = new HashMap<string, WindowView>();
     addView(w);
     selectView(w.viewName());
@@ -710,11 +713,11 @@ class ProjectView implements WindowView {
     current_view.mouseDragged();
   }
 
-  void draw() {
+  void draw(Project proj) {
     /* check to see if the current view is correct */
     if (ui_name_of_selected_view() != viewName())
       selectView(ui_name_of_selected_view());
-    current_view.draw();
+    current_view.draw(proj);
   }
 }
 
@@ -727,36 +730,160 @@ class ProjectView implements WindowView {
  *
  **********************************************************/
 
+class ProjectTree {
+  Project proj;
+  ProjectTree parent;
+  ArrayList<ProjectTree> children;
+
+  ProjectTree(Project in_proj) {
+    proj = in_proj;
+    parent = null;
+    children = new ArrayList<ProjectTree>();
+  }
+
+  ProjectTree addChild(Project in_child) {
+    ProjectTree child = new ProjectTree(in_child);
+    child.parent = this;
+
+    children.add(child);
+    return child;
+  }
+}
+
+interface Command {
+  int commandCode();
+}
+
+int CMD_CODE_ADD_DIMENSION  = 0x1001;
+int CMD_CODE_ADD_MATERIAL   = 0x1002;
+int CMD_CODE_ADD_SHEET      = 0x1003;
+
+class CmdAddDimension implements Command {
+  string name;
+  float val;
+  int unit_of_measure;
+
+  CmdAddDimension(string in_name, float in_val, int in_unit_of_measure) {
+    name = in_name;
+    val = in_val;
+    unit_of_measure = in_unit_of_measure;
+  }
+
+  int commandCode() { return CMD_CODE_ADD_DIMENSION; }
+}
+
+class CmdAddMaterial implements Command {
+  string name;
+  string thickness;
+
+  CmdAddMaterial(string in_name, string in_thickness) {
+    name = in_name;
+    thickness = in_thickness;
+  }
+
+  int commandCode() { return CMD_CODE_ADD_MATERIAL; }
+}
+
+class CmdAddSheet implements Command {
+  string name;
+  string material;
+  string xwidth;
+  string ywidth;
+
+  CmdAddSheet(string in_name, string in_material, string in_xwidth, string in_ywidth) {
+    name = in_name;
+    material = in_material;
+    xwidth = in_xwidth;
+    ywidth = in_ywidth;
+  }
+
+  int commandCode() { return CMD_CODE_ADD_SHEET; }
+}
+
+class ProjectController {
+  ProjectTree project_tree;
+
+  ProjectController(Project in_proj) {
+    project_tree = new ProjectTree(in_proj);
+  }
+
+  void processCommand(ErrorStack err, Command cmd) {
+    if (err.isFail())
+      return;
+
+    Project np = null;
+
+    switch (cmd.commandCode()) {
+      case CMD_CODE_ADD_DIMENSION:
+        {
+          CmdAddDimension ccmd = (CmdAddDimension)cmd;
+          np = project_tree.proj.addDimension(err, ccmd.name, ccmd.val, ccmd.unit_of_measure);
+          if (err.isFail()) {
+            err.propagate("ProjectController_processCommand", "adding dimension '" + ccmd.name + "'");
+            return;
+          }
+        }
+        break;
+      case CMD_CODE_ADD_MATERIAL:
+        {
+          CmdAddMaterial ccmd = (CmdAddMaterial)cmd;
+          np = project_tree.proj.addMaterial(err, ccmd.name, ccmd.thickness);
+          if (err.isFail()) {
+            err.propagate("ProjectController_processCommand", "adding material '" + ccmd.name + "'");
+            return;
+          }
+        }
+        break;
+      case CMD_CODE_ADD_SHEET:
+        {
+          CmdAddSheet ccmd = (CmdAddSheet)cmd;
+          np = project_tree.proj.addSheet(err, ccmd.name, ccmd.material, ccmd.xwidth, ccmd.ywidth);
+          if (err.isFail()) {
+            err.propagate("ProjectController_processCommand", "adding sheet '" + ccmd.name + "'");
+            return;
+          }
+        }
+        break;
+      default:
+        err.error_ProjectController_processCommand_UNKNOWN_CMD_CODE(cmd.commandCode());
+        return;
+    }
+
+    if (null != np)
+      project_tree = project_tree.addChild(np);
+  }
+}
+
+
+
+ProjectController proj_controller = null;
 ProjectView proj_view = null;
 
-Project update_if_new(Project old, Project knew) {
-  return (null != knew) ? knew : old;
-}
 
 void setup () {
   the_log.log("info: starting...");
   ErrorStack err = new ErrorStack();
 
   /* make the project */
-  Project proj = new Project(new ProjectConfig(), "a chair");
+  proj_controller = new ProjectController(new Project(new ProjectConfig(), "a chair"));
 
-  proj = update_if_new(proj, proj.addDimension(err, "0.75in ply thickness", 0.75, UNIT_INCHES) );
-  proj = update_if_new(proj, proj.addMaterial(err, "0.75in ply", "0.75in ply thickness") );
-  proj = update_if_new(proj, proj.addDimension(err, "0.5in ply thickness", 0.5, UNIT_INCHES) );
-  proj = update_if_new(proj, proj.addMaterial(err, "0.5in ply", "0.5in ply thickness") );
+  proj_controller.processCommand(err, new CmdAddDimension("0.75in ply thickness", 0.75, UNIT_INCHES));
+  proj_controller.processCommand(err, new CmdAddMaterial("0.75in ply", "0.75in ply thickness"));
 
-  proj = update_if_new(proj, proj.addDimension(err, "sheet 18x12in xwidth", 18, UNIT_INCHES) );
-  proj = update_if_new(proj, proj.addDimension(err, "sheet 18x12in ywidth", 12, UNIT_INCHES) );
-  proj = update_if_new(proj, proj.addSheet(err, "sheet 18x12x0.75in ply", "0.75in ply", "sheet 18x12in xwidth", "sheet 18x12in ywidth") );
+  proj_controller.processCommand(err, new CmdAddDimension("0.5in ply thickness", 0.5, UNIT_INCHES));
+  proj_controller.processCommand(err, new CmdAddMaterial("0.5in ply", "0.5in ply thickness"));
 
-  proj = update_if_new(proj, proj.addDimension(err, "sheet 4x4in xwidth", 4, UNIT_INCHES) );
-  proj = update_if_new(proj, proj.addDimension(err, "sheet 4x4in ywidth", 4, UNIT_INCHES) );
-  proj = update_if_new(proj, proj.addSheet(err, "sheet 4x4x0.5in ply", "0.5in ply", "sheet 4x4in xwidth", "sheet 4x4in ywidth") );
+  proj_controller.processCommand(err, new CmdAddDimension("sheet 18x12in xwidth", 18, UNIT_INCHES));
+  proj_controller.processCommand(err, new CmdAddDimension("sheet 18x12in ywidth", 12, UNIT_INCHES));
+  proj_controller.processCommand(err, new CmdAddSheet("sheet 18x12x0.75in ply", "0.75in ply", "sheet 18x12in xwidth", "sheet 18x12in ywidth"));
+
+  proj_controller.processCommand(err, new CmdAddDimension("sheet 4x4in width", 4, UNIT_INCHES));
+  proj_controller.processCommand(err, new CmdAddSheet("sheet 4x4x0.5in ply", "0.5in ply", "sheet 4x4in width", "sheet 4x4in width"));
+
 
   if (!err.isFail()) {
-    proj_view = new ProjectView(proj, new SheetView(proj, "sheet 18x12x0.75in ply"));
-    proj_view.addView(new SheetView(proj, "sheet 4x4x0.5in ply"));
-
+    proj_view = new ProjectView(new SheetView("sheet 18x12x0.75in ply"));
+    proj_view.addView(new SheetView("sheet 4x4x0.5in ply"));
     proj_view.selectView("sheet 4x4x0.5in ply");
 
     size(canvas_width, canvas_height, P3D);
@@ -778,5 +905,5 @@ void mouseDragged() {
 }
 
 void draw() {
-  proj_view.draw();
+  proj_view.draw(proj_controller.project_tree.proj);
 }
