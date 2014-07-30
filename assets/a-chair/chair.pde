@@ -687,10 +687,8 @@ class ProjectView implements WindowView {
   HashMap<string, WindowView> windows;
   WindowView current_view;
 
-  ProjectView(WindowView w) {
+  ProjectView() {
     windows = new HashMap<string, WindowView>();
-    addView(w);
-    selectView(w.viewName());
   }
 
   void selectView(string name) {
@@ -726,23 +724,25 @@ class ProjectView implements WindowView {
 
 /***********************************************************
  *
- * Driver code
+ * Controller classes
  *
  **********************************************************/
 
 class ProjectTree {
   Project proj;
+  ProjectView view;
   ProjectTree parent;
   ArrayList<ProjectTree> children;
 
-  ProjectTree(Project in_proj) {
+  ProjectTree(Project in_proj, ProjectView in_view) {
     proj = in_proj;
+    view = in_view;
     parent = null;
     children = new ArrayList<ProjectTree>();
   }
 
-  ProjectTree addChild(Project in_child) {
-    ProjectTree child = new ProjectTree(in_child);
+  ProjectTree addChild(Project in_child, ProjectView in_view) {
+    ProjectTree child = new ProjectTree(in_child, in_view);
     child.parent = this;
 
     children.add(child);
@@ -803,8 +803,16 @@ class CmdAddSheet implements Command {
 class ProjectController {
   ProjectTree project_tree;
 
-  ProjectController(Project in_proj) {
-    project_tree = new ProjectTree(in_proj);
+  ProjectController(Project in_proj, ProjectView in_view) {
+    project_tree = new ProjectTree(in_proj, in_view);
+  }
+
+  Project project() {
+    return project_tree.proj;
+  }
+
+  ProjectView view() {
+    return project_tree.view;
   }
 
   void processCommand(ErrorStack err, Command cmd) {
@@ -812,6 +820,7 @@ class ProjectController {
       return;
 
     Project np = null;
+    ProjectView nv = null;
 
     switch (cmd.commandCode()) {
       case CMD_CODE_ADD_DIMENSION:
@@ -842,6 +851,8 @@ class ProjectController {
             err.propagate("ProjectController_processCommand", "adding sheet '" + ccmd.name + "'");
             return;
           }
+          project_tree.view.addView(new SheetView(ccmd.name));
+          project_tree.view.selectView(ccmd.name);
         }
         break;
       default:
@@ -849,23 +860,27 @@ class ProjectController {
         return;
     }
 
-    if (null != np)
-      project_tree = project_tree.addChild(np);
+    if (null != np || null != nv)
+      project_tree = project_tree.addChild((null == np) ? project_tree.project : np, (null == nv) ? project_tree.view : nv);
   }
 }
 
 
 
-ProjectController proj_controller = null;
-ProjectView proj_view = null;
+/***********************************************************
+ *
+ * Driver code
+ *
+ **********************************************************/
 
+ProjectController proj_controller = null;
 
 void setup () {
   the_log.log("info: starting...");
   ErrorStack err = new ErrorStack();
 
   /* make the project */
-  proj_controller = new ProjectController(new Project(new ProjectConfig(), "a chair"));
+  proj_controller = new ProjectController(new Project(new ProjectConfig(), "a chair"), new ProjectView());
 
   proj_controller.processCommand(err, new CmdAddDimension("0.75in ply thickness", 0.75, UNIT_INCHES));
   proj_controller.processCommand(err, new CmdAddMaterial("0.75in ply", "0.75in ply thickness"));
@@ -882,10 +897,6 @@ void setup () {
 
 
   if (!err.isFail()) {
-    proj_view = new ProjectView(new SheetView("sheet 18x12x0.75in ply"));
-    proj_view.addView(new SheetView("sheet 4x4x0.5in ply"));
-    proj_view.selectView("sheet 4x4x0.5in ply");
-
     size(canvas_width, canvas_height, P3D);
     frameRate(120);
 
@@ -901,9 +912,9 @@ void setup () {
 }
 
 void mouseDragged() {
-  proj_view.mouseDragged();
+  proj_controller.view().mouseDragged();
 }
 
 void draw() {
-  proj_view.draw(proj_controller.project_tree.proj);
+  proj_controller.view().draw(proj_controller.project());
 }
