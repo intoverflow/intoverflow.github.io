@@ -576,7 +576,7 @@ class GeneralCamera {
   }
 
   void switchTo() {
-    x = m_zoom *m_e2.x + m_center.x;
+    x = m_zoom * m_e2.x + m_center.x;
     y = m_zoom * m_e2.y + m_center.y;
     z = m_zoom * m_e2.z + m_center.z;
 
@@ -593,11 +593,11 @@ interface WindowView {
 
 class SheetView implements WindowView {
   string SHT_sheetname;
-  GeneralCamera camera;
+  GeneralCamera cam;
 
   SheetView(string in_SHT_sheetname) {
     SHT_sheetname = in_SHT_sheetname;
-    camera = new GeneralCamera();
+    cam = new GeneralCamera();
   }
 
   string viewName() {
@@ -606,16 +606,17 @@ class SheetView implements WindowView {
 
   void mouseDragged() {
     if (mouseButton == LEFT) {
-      camera.translate(pmouseX - mouseX, mouseY - pmouseY);
+      cam.translate(pmouseX - mouseX, mouseY - pmouseY);
     }
     else if (mouseButton == CENTER) {
-      camera.tilt(mouseX - pmouseX);
-      camera.zoom(pmouseY - mouseY);
+      cam.tilt(mouseX - pmouseX);
+      cam.zoom(pmouseY - mouseY);
     }
   }
 
   void drawSheet(Project proj) {
     pushMatrix();
+      strokeWeight(1.5);
       stroke(255);
       fill(127, 127, 127, 127);
 
@@ -635,8 +636,11 @@ class SheetView implements WindowView {
       box(x, y, z);
 
       /* draw the widths */
+      strokeWeight(1);
       stroke(0, 255, 255);
       fill(0, 255, 255, 255);
+      textMode(SHAPE)
+      textSize(proj.pcfg.font_size);
       line( x/2 + 5, -(y/2), -z/2
           , x/2 + 5,   y/2 , -z/2
           );
@@ -649,39 +653,73 @@ class SheetView implements WindowView {
   }
 
   void draw(Project proj) {
-    background(50);
-    lights();
-
-    hint(DISABLE_DEPTH_TEST);
-
     textFont(createFont("Courier New"));
-    textSize(proj.pcfg.font_size);
 
-    camera.switchTo();
-    // ortho(-canvas_width/4, canvas_width/4, -canvas_height/4, canvas_height/4, -1000, 1000);
+    background(50);
 
-    /* draw coordinate axis */
-    pushMatrix();
-      stroke(255, 0, 0);
-      line(0, 0, 0, 1000, 0, 0);
-      stroke(127, 0, 0);
-      line(0, 0, 0, -1000, 0, 0);
+    /* draw model */
+    {
+      cam.switchTo();
+      hint(DISABLE_DEPTH_TEST);
+      lights();
 
-      stroke(0, 255, 0);
-      line(0, 0, 0, 0, 1000, 0);
-      stroke(0, 127, 0);
-      line(0, 0, 0, 0, -1000, 0);
+      drawCoordinateAxis(proj);
+      drawSheet(proj);
+    }
+
+    /* draw HUD */
+    {
+      camera();
+      hint(DISABLE_DEPTH_TEST);
+
+      noLights();
+      drawHUD(proj);
+    }
+  }
+
+  void drawCoordinateAxis(Project proj) {
+    strokeWeight(1);
+
+    stroke(255, 0, 0);
+    line(0, 0, 0, 1000, 0, 0);
+    stroke(127, 0, 0);
+    line(0, 0, 0, -1000, 0, 0);
+
+    stroke(0, 255, 0);
+    line(0, 0, 0, 0, 1000, 0);
+    stroke(0, 127, 0);
+    line(0, 0, 0, 0, -1000, 0);
 
 
-      stroke(0, 0, 255);
-      line(0, 0, 0, 0, 0, 1000);
-      stroke(0, 0, 127);
-      line(0, 0, 0, 0, 0, -1000);
-    popMatrix();
+    stroke(0, 0, 255);
+    line(0, 0, 0, 0, 0, 1000);
+    stroke(0, 0, 127);
+    line(0, 0, 0, 0, 0, -1000);
+  }
 
-    drawSheet(proj);
+  void drawHUD(Project proj) {
+    textMode(MODEL);
+    textSize(10);
+
+    /* view name */
+    fill(255);
+    text(viewName(), 10, canvas_height - (10 + textAscent()));
+
+    /* hud toggle */
+    strokeWeight(2);
+    stroke(200);
+    fill(100);
+    rect(10, 10, 80, 20);
+    fill(255);
+    text("toggle hud", 10, 10 + textAscent());
   }
 }
+
+
+
+
+
+
 
 class ProjectView implements WindowView {
   FunHashMap<string, WindowView> windows;
@@ -703,7 +741,6 @@ class ProjectView implements WindowView {
 
   void selectView(string name) {
     current_view = windows.lookup(name);
-    ui_set_selected_view(name);
   }
 
   ProjectView addView(ErrorStack err, WindowView v) {
@@ -715,7 +752,6 @@ class ProjectView implements WindowView {
       err.propagate("ProjectView_addView", "adding view '" + v.viewName() + "'");
       return null;
     }
-    ui_add_view(v.viewName());
 
     if (ref_count <= 1) {
       windows = new_windows;
@@ -739,9 +775,6 @@ class ProjectView implements WindowView {
   }
 
   void draw(Project proj) {
-    /* check to see if the current view is correct */
-    if (ui_name_of_selected_view() != viewName())
-      selectView(ui_name_of_selected_view());
     if (null != current_view)
       current_view.draw(proj);
   }
@@ -953,6 +986,7 @@ void setup () {
   /* make the project */
   proj_controller = new ProjectController(new Project(new ProjectConfig(), "a chair"), new ProjectView());
 
+/*
   proj_controller.processCommand(err, new CmdAddDimension("0.75in ply thickness", 0.75, UNIT_INCHES));
   proj_controller.processCommand(err, new CmdAddMaterial("0.75in ply", "0.75in ply thickness"));
 
@@ -967,6 +1001,7 @@ void setup () {
   proj_controller.processCommand(err, new CmdAddSheet("sheet 4x4x0.5in ply", "0.5in ply", "sheet 4x4in width", "sheet 4x4in width"));
 
   proj_controller.processCommand(err, new CmdViewSelect("sheet 18x12x0.75in ply"));
+*/
 
   if (!err.isFail()) {
     size(canvas_width, canvas_height, P3D);
