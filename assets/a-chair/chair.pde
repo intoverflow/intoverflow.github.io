@@ -248,11 +248,8 @@ class ProjectConfig {
   /* Length in (P3D coordinates) of a 1cm line segment. */
   float fundamental_scale;
 
-  int font_size;
-
   ProjectConfig() {
     fundamental_scale = 8;
-    font_size = 16;
   }
 }
 
@@ -604,6 +601,13 @@ interface HUDElement {
   void draw(float x, float y);
 }
 
+class HUDEmpty implements HUDElement {
+  HUDEmpty() { }
+  float xwidth() { return 0; }
+  float ywidth() { return 0; }
+  void draw(float x, float y) { return; }
+}
+
 class HUDButton implements HUDElement {
   Color cstroke;
   Color cfill;
@@ -719,37 +723,45 @@ class HUDHorizontal implements HUDElement {
 }
 
 
-
-interface WindowView {
-  string viewName();
-  void mouseDragged();
+interface ModelView {
   void draw(Project proj);
 }
 
-class SheetView implements WindowView {
+class AxisModelView implements ModelView {
+  AxisModelView() {
+  }
+
+  void draw(Project proj) {
+    strokeWeight(1);
+
+    /* x */
+    stroke(255, 0, 0);
+    line(0, 0, 0, 1000, 0, 0);
+    stroke(127, 0, 0);
+    line(0, 0, 0, -1000, 0, 0);
+
+    /* y */
+    stroke(0, 255, 0);
+    line(0, 0, 0, 0, 1000, 0);
+    stroke(0, 127, 0);
+    line(0, 0, 0, 0, -1000, 0);
+
+    /* z */
+    stroke(0, 0, 255);
+    line(0, 0, 0, 0, 0, 1000);
+    stroke(0, 0, 127);
+    line(0, 0, 0, 0, 0, -1000);
+  }
+}
+
+class SheetModelView implements ModelView {
   string SHT_sheetname;
-  GeneralCamera cam;
 
-  SheetView(string in_SHT_sheetname) {
+  SheetModelView(string in_SHT_sheetname) {
     SHT_sheetname = in_SHT_sheetname;
-    cam = new GeneralCamera();
   }
 
-  string viewName() {
-    return SHT_sheetname;
-  }
-
-  void mouseDragged() {
-    if (mouseButton == LEFT) {
-      cam.translate(pmouseX - mouseX, mouseY - pmouseY);
-    }
-    else if (mouseButton == CENTER) {
-      cam.tilt(mouseX - pmouseX);
-      cam.zoom(pmouseY - mouseY);
-    }
-  }
-
-  void drawSheet(Project proj) {
+  void draw(Project proj) {
     pushMatrix();
       strokeWeight(1.5);
       stroke(255);
@@ -775,7 +787,7 @@ class SheetView implements WindowView {
       stroke(0, 255, 255);
       fill(0, 255, 255, 255);
       textMode(SHAPE)
-      textSize(proj.pcfg.font_size);
+      textSize(16);
       line( x/2 + 5, -(y/2), -z/2
           , x/2 + 5,   y/2 , -z/2
           );
@@ -786,61 +798,89 @@ class SheetView implements WindowView {
       text(ywidth.pretty(), x/2+10, 0, -z/2);
     popMatrix();
   }
+}
+
+class ModelStackView implements ModelView {
+  ArrayList <ModelView> models;
+
+  ModelStackView() {
+    models = new ArrayList<ModelView>();
+  }
+
+  void addModel(ModelView n) {
+    models.add(n);
+  }
+
+  void draw(Project proj) {
+    for (int i = 0; i < models.size(); i++) {
+      models.get(i).draw(proj);
+    }
+  }
+}
+
+class Window {
+  string name;
+
+  GeneralCamera model_cam;
+  ModelStackView model_stack;
+  HUDElement hud;
+
+  Window(string in_name) {
+    name = in_name;
+    model_cam = new GeneralCamera();
+    model_stack = new ModelStackView();
+    hud = new HUDEmpty();
+  }
+
+  void addModel(ModelView n) {
+    model_stack.addModel(n);
+  }
+
+  void mouseDragged() {
+    if (mouseButton == LEFT) {
+      model_cam.translate(pmouseX - mouseX, mouseY - pmouseY);
+    }
+    else if (mouseButton == CENTER) {
+      model_cam.tilt(mouseX - pmouseX);
+      model_cam.zoom(pmouseY - mouseY);
+    }
+  }
 
   void draw(Project proj) {
     textFont(createFont("Courier New"));
-
     background(50);
 
-    /* draw model */
-    {
-      cam.switchTo();
-      hint(DISABLE_DEPTH_TEST);
-      lights();
+    model_cam.switchTo();
+    hint(DISABLE_DEPTH_TEST);
+    lights();
+    textMode(SHAPE);
+    model_stack.draw(proj);
 
-      drawCoordinateAxis(proj);
-      drawSheet(proj);
-    }
-
-    /* draw HUD */
-    {
-      camera();
-      hint(DISABLE_DEPTH_TEST);
-
-      noLights();
-      drawHUD(proj);
-    }
-  }
-
-  void drawCoordinateAxis(Project proj) {
-    strokeWeight(1);
-
-    stroke(255, 0, 0);
-    line(0, 0, 0, 1000, 0, 0);
-    stroke(127, 0, 0);
-    line(0, 0, 0, -1000, 0, 0);
-
-    stroke(0, 255, 0);
-    line(0, 0, 0, 0, 1000, 0);
-    stroke(0, 127, 0);
-    line(0, 0, 0, 0, -1000, 0);
-
-
-    stroke(0, 0, 255);
-    line(0, 0, 0, 0, 0, 1000);
-    stroke(0, 0, 127);
-    line(0, 0, 0, 0, 0, -1000);
+    camera();
+    hint(DISABLE_DEPTH_TEST);
+    noLights();
+    textMode(MODEL);
+    drawHUD(proj);
   }
 
   void drawHUD(Project proj) {
-    textMode(MODEL);
     textSize(10);
 
     /* view name */
     fill(255);
-    text(viewName(), 10, canvas_height - (10 + textAscent()));
+    text(name, 10, canvas_height - (10 + textAscent()));
 
     /* hud */
+    hud.draw(10, 10);
+  }
+}
+
+class SheetWindow extends Window {
+  SheetWindow(string in_name) {
+    super(in_name);
+    addModel(new AxisModelView());
+    addModel(new SheetModelView(in_name));
+
     Color btn_stroke = new Color(0x00a1a1a1);
     Color btn_fill = new Color(0x00464646);
     Color btn_label = new Color(0x00ffffff);
@@ -864,44 +904,42 @@ class SheetView implements WindowView {
     hud_a.addRight(hud2);
     hud_a.addRight(hud3);
 
-    HUDVertical hud = new HUDVertical();
+    hud = new HUDVertical();
     hud.addBottom(hud_a);
     hud.addBottom(new HUDButton(btn_stroke, btn_fill, btn_label, 240, 30, "execute command"));
-
-    hud.draw(10, 10);
   }
 }
 
 
 class ProjectView implements WindowView {
-  FunHashMap<string, WindowView> windows;
-  WindowView current_view;
+  FunHashMap<string, Window> windows;
+  Window current_window;
 
   int ref_count;
 
   ProjectView() {
-    windows = new FunHashMap<string, WindowView>();
-    current_view = null;
+    windows = new FunHashMap<string, Window>();
+    current_window = null;
     ref_count = 0;
   }
 
-  ProjectView(FunHashMap<string, WindowView> in_windows) {
+  ProjectView(FunHashMap<string, Window> in_windows) {
     windows = in_windows;
-    current_view = null;
+    current_window = null;
     ref_count = 0;
   }
 
   void selectView(string name) {
-    current_view = windows.lookup(name);
+    current_window = windows.lookup(name);
   }
 
-  ProjectView addView(ErrorStack err, WindowView v) {
+  ProjectView addWindow(ErrorStack err, Window v) {
     if (err.isFail())
       return null;
 
-    FunHashMap<string, WindowView> new_windows = windows.add(err, v.viewName(), v);
+    FunHashMap<string, Window> new_windows = windows.add(err, v.name, v);
     if (err.isFail()) {
-      err.propagate("ProjectView_addView", "adding view '" + v.viewName() + "'");
+      err.propagate("ProjectView_addView", "adding window '" + v.name + "'");
       return null;
     }
 
@@ -911,24 +949,20 @@ class ProjectView implements WindowView {
     }
 
     ProjectView n = new ProjectView(new_windows);
-    if (null != current_view)
-      n.selectView(viewName());
+    if (null != current_window)
+      n.selectView(current_window.name);
 
     return n;
   }
 
-  string viewName() {
-    return (null != current_view) ? current_view.viewName() : "[master view]";
-  }
-
   void mouseDragged() {
-    if (null != current_view)
-      current_view.mouseDragged();
+    if (null != current_window)
+      current_window.mouseDragged();
   }
 
   void draw(Project proj) {
-    if (null != current_view)
-      current_view.draw(proj);
+    if (null != current_window)
+      current_window.draw(proj);
   }
 }
 
@@ -1095,7 +1129,7 @@ class ProjectController {
             err.propagate("ProjectController_processCommand", "adding sheet '" + ccmd.name + "'");
             return;
           }
-          nv = view().addView(err, new SheetView(ccmd.name));
+          nv = view().addWindow(err, new SheetWindow(ccmd.name));
           if (err.isFail()) {
             err.propagate("ProjectController_processCommand", "adding view '" + ccmd.name + "'");
             return;
