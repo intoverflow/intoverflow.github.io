@@ -585,6 +585,141 @@ class GeneralCamera {
 }
 
 
+
+class Color {
+  int r;
+  int g;
+  int b;
+
+  Color(int color) {
+    r = (color & 0x00ff0000) >> 16;
+    g = (color & 0x0000ff00) >> 8;
+    b = color & 0x000000ff;
+  }
+}
+
+interface HUDElement {
+  float xwidth();
+  float ywidth();
+  void draw(float x, float y);
+}
+
+class HUDButton implements HUDElement {
+  Color cstroke;
+  Color cfill;
+  Color clabel;
+  float m_xwidth;
+  float m_ywidth;
+  string label;
+
+  HUDButton(Color in_cstroke, Color in_cfill, Color in_clabel, float in_xwidth, float in_ywidth, string in_label) {
+    cstroke = in_cstroke;
+    cfill = in_cfill;
+    clabel = in_clabel;
+    m_xwidth = in_xwidth;
+    m_ywidth = in_ywidth;
+    label = in_label;
+  }
+
+  float xwidth() { return m_xwidth; }
+  float ywidth() { return m_ywidth; }
+
+  void draw(float x, float y) {
+    strokeWeight(2);
+    stroke(cstroke.r, cstroke.g, cstroke.b);
+    fill(cfill.r, cfill.g, cfill.b);
+    rect(x, y, m_xwidth, m_ywidth);
+    fill(clabel.r, clabel.g, clabel.b);
+    text(label, x, y + textAscent());
+  }
+}
+
+class HUDVertical implements HUDElement {
+  ArrayList<HUDElement> elements;
+
+  HUDVertical() {
+    elements = new ArrayList<HUDElement>();
+  }
+
+  void addTop(HUDElement n) {
+    elements.add(0, n);
+  }
+
+  void addBottom(HUDElement n) {
+    elements.add(n);
+  }
+
+  float spacing() { return 5; }
+
+  float xwidth() {
+    float x = 0;
+    for (int i = 0; i < elements.size(); i++) {
+      float nx = elements.get(i).xwidth();
+      x = (x < nx) ? nx : x;
+    }
+    return x;
+  }
+
+  float ywidth() {
+    float y = 0;
+    for (int i = 0; i < elements.size(); i++) {
+      y += elements.get(i).ywidth() + (0 < i ? spacing() : 0);
+    }
+    return y;
+  }
+
+  void draw(float x, float y) {
+    for (int i = 0; i < elements.size(); i++) {
+      elements.get(i).draw(x, y);
+      y += elements.get(i).ywidth() + spacing();
+    }
+  }
+}
+
+class HUDHorizontal implements HUDElement {
+  ArrayList<HUDElement> elements;
+
+  HUDHorizontal() {
+    elements = new ArrayList<HUDElement>();
+  }
+
+  void addLeft(HUDElement n) {
+    elements.add(0, n);
+  }
+
+  void addRight(HUDElement n) {
+    elements.add(n);
+  }
+
+  float spacing() { return 5; }
+
+  float xwidth() {
+    float x = 0;
+    for (int i = 0; i < elements.size(); i++) {
+      x += elements.get(i).xwidth() + (0 < i ? spacing() : 0);
+    }
+    return x;
+  }
+
+  float ywidth() {
+    float y = 0;
+    for (int i = 0; i < elements.size(); i++) {
+      float ny = elements.get(i).ywidth();
+      y = (y < ny) ? ny : y;
+    }
+    return y;
+  }
+
+  void draw(float x, float y) {
+    for (int i = 0; i < elements.size(); i++) {
+      elements.get(i).draw(x, y);
+      x += elements.get(i).xwidth() + spacing();
+    }
+  }
+}
+
+
+
 interface WindowView {
   string viewName();
   void mouseDragged();
@@ -705,20 +840,37 @@ class SheetView implements WindowView {
     fill(255);
     text(viewName(), 10, canvas_height - (10 + textAscent()));
 
-    /* hud toggle */
-    strokeWeight(2);
-    stroke(200);
-    fill(100);
-    rect(10, 10, 80, 20);
-    fill(255);
-    text("toggle hud", 10, 10 + textAscent());
+    /* hud */
+    Color btn_stroke = new Color(0x00a1a1a1);
+    Color btn_fill = new Color(0x00464646);
+    Color btn_label = new Color(0x00ffffff);
+
+    HUDVertical hud1 = new HUDVertical();
+    hud1.addBottom(new HUDButton(btn_stroke, btn_fill, btn_label, 80, 20, "toggle hud"));
+    hud1.addBottom(new HUDButton(btn_stroke, btn_fill, btn_label, 80, 20, "add sheet"));
+    hud1.addBottom(new HUDButton(btn_stroke, btn_fill, btn_label, 80, 20, "add part"));
+
+
+    HUDVertical hud2 = new HUDVertical();
+    hud2.addBottom(new HUDButton(btn_stroke, btn_fill, btn_label, 50, 20, "eat"));
+    hud2.addBottom(new HUDButton(btn_stroke, btn_fill, btn_label, 60, 20, "sleep"));
+
+    HUDVertical hud3 = new HUDVertical();
+    hud3.addBottom(new HUDButton(btn_stroke, btn_fill, btn_label, 90, 20, "rave"));
+    hud3.addBottom(new HUDButton(btn_stroke, btn_fill, btn_label, 90, 45, "repeat"));
+
+    HUDHorizontal hud_a = new HUDHorizontal();
+    hud_a.addRight(hud1);
+    hud_a.addRight(hud2);
+    hud_a.addRight(hud3);
+
+    HUDVertical hud = new HUDVertical();
+    hud.addBottom(hud_a);
+    hud.addBottom(new HUDButton(btn_stroke, btn_fill, btn_label, 240, 30, "execute command"));
+
+    hud.draw(10, 10);
   }
 }
-
-
-
-
-
 
 
 class ProjectView implements WindowView {
@@ -986,7 +1138,7 @@ void setup () {
   /* make the project */
   proj_controller = new ProjectController(new Project(new ProjectConfig(), "a chair"), new ProjectView());
 
-/*
+
   proj_controller.processCommand(err, new CmdAddDimension("0.75in ply thickness", 0.75, UNIT_INCHES));
   proj_controller.processCommand(err, new CmdAddMaterial("0.75in ply", "0.75in ply thickness"));
 
@@ -1001,7 +1153,7 @@ void setup () {
   proj_controller.processCommand(err, new CmdAddSheet("sheet 4x4x0.5in ply", "0.5in ply", "sheet 4x4in width", "sheet 4x4in width"));
 
   proj_controller.processCommand(err, new CmdViewSelect("sheet 18x12x0.75in ply"));
-*/
+
 
   if (!err.isFail()) {
     size(canvas_width, canvas_height, P3D);
