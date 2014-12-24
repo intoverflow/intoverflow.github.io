@@ -685,7 +685,7 @@ It says that <code>strlen</code> returns a machine <code>int</code> which is equ
 
 Lastly, it says that <code>strlen</code> does not modify the data pointed-to by <code>_s</code>.
 
-A formal proof that our <code>strncat</code> is correct
+A formal proof that our <code>strlen</code> is correct
 ------------------------------------------------
 
 
@@ -699,6 +699,127 @@ Definition Gprog : funspecs :=  strlen_spec :: nil.
 </pre>
 </div>
 
-Now we can state and prove a lemma about <code>strlen</code> meeting its specification:
+Now we can state and prove a lemma about <code>strlen</code> meeting its specification. Note that I got stuck near the end and cheated with an "admit". I admit it, I got tired!
 
-<h1> coming soon! </h1>
+<div style="background-color: #FFFFDB;">
+<pre>
+Lemma body_strlen: semax_body Vprog Gprog f_strlen strlen_spec.
+Proof.
+  start_function.
+  set (H_ascii_string := H0).
+  destruct H0 as [ zero_lte_len_lt_size H_ascii_not_nil H_contents_len ].
+  forward (* i = 0; *).
+  forward. (* c = s[i]; *)
+  { entailer!.
+    destruct (zeq 0 len).
+    + subst ; rewrite H_contents_len ; simpl ; trivial.
+    + assert (ascii_not_nil (contents 0)) as ann
+         by (apply H_ascii_not_nil; omega).
+      inv ann; simpl; auto.
+  }
+  set (strlen_Inv :=
+    EX i': Z,
+    (PROP ( 0 <= i' <= len )
+     LOCAL ( `(eq s0) (eval_id _s)
+           ; `(eq (Vint (Int.repr i'))) (eval_id _i)
+           ; `(eq (contents i')) (eval_id _c)
+           )
+     SEP ( `(array_at tuchar sh contents 0 size) (eval_id _s) )
+    ) ).
+  set (strlen_Post :=
+    (PROP ( )
+     LOCAL ( `(eq s0) (eval_id _s)
+           ; `(eq (Vint (Int.repr len))) (eval_id _i)
+           )
+     SEP ( `(array_at tuchar sh contents 0 size) (eval_id _s) )
+    ) ).
+  forward_while strlen_Inv strlen_Post; unfold strlen_Inv, strlen_Post in * ; clear strlen_Inv strlen_Post.
+  (* Prove that current precondition implies loop invariant *)
+  { apply exp_right with 0.
+    entailer!.
+    rewrite H0.
+    normalize.
+    destruct (zeq 0 len).
+    + subst ; rewrite H_contents_len ; simpl.
+      normalize.
+    + assert (ascii_not_nil (contents 0)) as contents_0_ascii_nn.
+      { apply H_ascii_not_nil ; omega. }
+      assert (is_int (contents 0)) as contents_0_is_int.
+      { apply ascii_string_is_int with len size ; try omega.
+        apply H_ascii_string.
+      }
+      destruct (contents 0) ; simpl in contents_0_is_int ; try contradiction.
+      destruct contents_0_ascii_nn.
+      simpl.
+      (* *)
+      admit.
+  }
+  (* Prove that loop invariant implies typechecking condition *)
+  { entailer!. }
+  (* Prove that invariant && not loop-cond implies postcondition *)
+  { entailer!.
+    replace len with i' ; trivial.
+    apply Z.le_lteq in H1 ; destruct H1 ; try assumption.
+    (* now we go for the contradiction *)
+    rewrite negb_false_iff in H2.
+    apply int_eq_e in H2.
+    assert (ascii_not_nil (contents i')) as H_contents_i'.
+    { apply H_ascii_not_nil. omega. }
+    destruct H_contents_i'.
+    inversion H3 ; subst ; simpl in *.
+    omega.
+  }
+  (* Prove that loop body preserves invariant *)
+  { forward (* i++; *).
+    forward (* c = s[i]; *).
+    + entailer!.
+      { (* is_int (contents (i' + 1)) *)
+        assert (i' < len) as H_i'_len.
+        { apply Z.le_lteq in H1 ; destruct H1 ; subst ; try assumption.
+          rewrite H_contents_len in H4.
+          inversion H4 ; subst.
+          compute in H3 ; inversion H3.
+        }
+        assert (is_int (contents (i' + 1))) as Q.
+        { apply ascii_string_is_int with len size.
+          + apply H_ascii_string.
+          + omega.
+        }
+        destruct (contents (i' + 1)) ; simpl in * ; try contradiction ; trivial.
+      }
+      { (* 0 <= i' + 1 < size *)
+        assert (i' < len) ; try omega.
+        apply Z.le_lteq in H1.
+        destruct H1 ; trivial ; subst.
+        rewrite H_contents_len in H4 ; inversion H4 ; subst.
+        compute in H3 ; inversion H3.
+      }
+    + entailer!.
+      apply exp_right with (i' + 1).
+      entailer!.
+      { (* i' + 1 <= len *)
+        assert (contents i' <> Vint Int.zero).
+        { intro Q ; rewrite Q in H4.
+          compute in H4 ; inversion H4.
+        }
+        apply Z.le_lteq in H1.
+        destruct H1 ; subst ; try omega ; congruence.
+      }
+      { (* contents (i' + 1) = Vint _id *)
+        rewrite H2 ; normalize.
+        (* *)
+        admit.
+      }
+  }
+  (* loop is done, continue with rest of proof *)
+  forward (* return i; *).
+Qed.
+
+</pre>
+</div>
+
+
+A formal proof that our <code>strncat</code> is correct
+------------------------------------------------
+
+Next time!
