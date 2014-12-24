@@ -64,7 +64,7 @@ There is a grading of `\(\mathbb C[[X]]\)` by "least-degree" which can be notati
   \mathbb C[[X]]_{n<} & = \bigoplus_{m=n+1}^\infty \mathbb C[[X]]_m \text{ for } -1 \leq n \mathrm,
 \end{align*}
 \]`
-Then for each `\(n \leq 0\)` we have:
+Then for each `\(0 \leq n\)` we have:
 `\[ \mathbb C[[X]] = \left( \bigoplus_{m=0}^n \mathbb C[[X]]_m \right) \oplus \mathbb C[[X]]_{n<} \mathrm. \]`
 
 For `\(p(X) = \sum_{n=0}^\infty a_nX^n \in \mathbb C[[X]]\)`, we define the "degree" `\(\deg p(X)\)` of `\(p(X)\)` to be the least `\(k \geq 0\)` such that `\(a_k \neq 0\)`, with `\(\deg 0\)` left undefined. Thus `\(p(X)\)` has degree `\(0\)` if `\(p(X)\)` has a non-zero constant term; it has degree `\(n > 0\)` if it has a zero coefficient for `\(X^m\)` for all `\(m < n\)`, but a non-zero coefficient for `\(X^n\)`.
@@ -115,7 +115,7 @@ The second way is to apply the operator to the equation `\(L(X) = 1/(1-X)\)`:
 \]`
 This calculation is a bit fishy, owing to the part where we write `\(X^{-1}\)`. After all, `\(X\)` is not a unit in `\(\mathbb C[[X]]\)`, so such a term seems like nonsense. We also have the expression `\(1-X\)` on the right-hand side of the `\(\circ\)` operator, which also doesn't seem right, as `\(1 - X \not\in \mathbb C[[X]]_{0<}\)`. Regardless, we arrived at the same answer as with our other method.
 
-One may think it odd that the "derivative" of the `List(X)` type should be a pair of lists `List(X) \cdot List(X)`, but this is precisely the interpretation of the equation `\(\partial_X L(X) = (L(X))^2\)`. There is a combinatorial interpretation of this phenomenon. In short, if `\(L(X)\)` represents a `List(X)`, then `\(\partial_X L(X)\)` represents a "`List(X)` with an `X`-shaped hole in it." Now things become a bit more clear: after all, if you have a list, say
+One may think it odd that the "derivative" of the `List(X)` type should be a pair of lists `List(X)` `\(\cdot\)` `List(X)`, but this is precisely the interpretation of the equation `\(\partial_X L(X) = (L(X))^2\)`. There is a combinatorial interpretation of this phenomenon. In short, if `\(L(X)\)` represents a `List(X)`, then `\(\partial_X L(X)\)` represents a "`List(X)` with an `X`-shaped hole in it." Now things become a bit more clear: after all, if you have a list, say
 <center>`[ a ; b ; c ; d ]`,</center>
 and you remove an element (say `b`), you're left with two lists with a hole in between, as in
 <center>`([ a ], [ c ; d ])`.</center>
