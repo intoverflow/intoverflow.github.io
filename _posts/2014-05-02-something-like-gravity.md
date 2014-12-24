@@ -148,58 +148,59 @@ Sage code for the triangle diagrams
 
 
 {% highlight python %}
-    dx = sqrt(3)/2
-    dy = 1/2
-    def tri_gen(i, j, fl_a, fl_b):
-        aff_a = {-1: 1, 1: 0}[fl_a]
-        aff_b = {-1: -1, 1: 0}[fl_b]
-        orig = vector((i*dx, (3*j+aff_a+aff_b)*dy))
-        a = orig + vector((0, fl_a * 2*dy))
-        b = orig + vector((-dx, fl_a * -dy))
-        c = orig + vector((dx, fl_a * -dy))
-        tri = polygon([a, b, c], fill=False)
-        t = text(str(orig) + "\n" + str(orig.norm().n(prec=11)) + "\nW" + str((i,j)), orig, fontsize=5)
-        return tri + t
+# Tested Sage Cloud 2014-12-23
+dx = sqrt(3)/2
+dy = 1/2
+def tri_gen(i, j, fl_a, fl_b):
+    aff_a = {-1: 1, 1: 0}[fl_a]
+    aff_b = {-1: -1, 1: 0}[fl_b]
+    orig = vector((i*dx, (3*j+aff_a+aff_b)*dy))
+    a = orig + vector((0, fl_a * 2*dy))
+    b = orig + vector((-dx, fl_a * -dy))
+    c = orig + vector((dx, fl_a * -dy))
+    tri = polygon([a, b, c], fill=False)
+    t = text(str(orig) + "\n" + str(orig.norm().n(prec=11)) + "\nW" + str((i,j)), orig, fontsize=5)
+    return tri + t
 
-    # We have two types of triangles: those pointing up and
-    # those pointing down. The way we draw them depends on the
-    # type of triange at the origin. If the origin is up,
-    # then use the _as_up functions. If the origin is down,
-    # use the _as_down functions.
-    def tri_up_as_up((i, j)):
-        return tri_gen(i, j, 1, 1)
-    def tri_down_as_up((i, j)):
-        return tri_gen(i, j, -1, 1)
-    def tri_up_as_down((i, j)):
-        return tri_gen(i, j, 1, -1)
-    def tri_down_as_down((i, j)):
-        return tri_gen(i, j, -1, -1)
+# We have two types of triangles: those pointing up and
+# those pointing down. The way we draw them depends on the
+# type of triange at the origin. If the origin is up,
+# then use the _as_up functions. If the origin is down,
+# use the _as_down functions.
+def tri_up_as_up((i, j)):
+    return tri_gen(i, j, 1, 1)
+def tri_down_as_up((i, j)):
+    return tri_gen(i, j, -1, 1)
+def tri_up_as_down((i, j)):
+    return tri_gen(i, j, 1, -1)
+def tri_down_as_down((i, j)):
+    return tri_gen(i, j, -1, -1)
 
-    # An "up" origin:
-    # radius 0
-    diagram = tri_up_as_up((0, 0))
-    # radius 1
-    for pt in [(-1, 0), (1, 0),  (0, -1)]:
-        diagram += tri_down_as_up(pt)
-    # radius sqrt(3)
-    for pt in [(-1, 1), (1, 1), (-2, 0), (2, 0), (-1, -1), (1, -1)]:
-        diagram += tri_up_as_up(pt)
-    # radius 2
-    for pt in [(0, 1), (-2, -1), (2, -1)]:
-        diagram += tri_down_as_up(pt)
-    show (diagram, axes=False)
+# An "up" origin:
+# radius 0
+diagram = tri_up_as_up((0, 0))
+# radius 1
+for pt in [(-1, 0), (1, 0),  (0, -1)]:
+    diagram += tri_down_as_up(pt)
+# radius sqrt(3)
+for pt in [(-1, 1), (1, 1), (-2, 0), (2, 0), (-1, -1), (1, -1)]:
+    diagram += tri_up_as_up(pt)
+# radius 2
+for pt in [(0, 1), (-2, -1), (2, -1)]:
+    diagram += tri_down_as_up(pt)
+show (diagram, axes=False)
 
-    # A "down" origin:
-    # radius 0
-    diagram = tri_down_as_down((0, 0))
-    # radius 1
-    for pt in [(-1, 0), (1, 0),  (0, 1)]:
-        diagram += tri_up_as_down(pt)
-    # radius sqrt(3)
-    for pt in [(-1, -1), (1, -1), (-2, 0), (2, 0), (-1, 1), (1, 1)]:
-        diagram += tri_down_as_down(pt)
-    # radius 2
-    for pt in [(0, -1), (-2, 1), (2, 1)]:
-        diagram += tri_up_as_down(pt)
-    show (diagram, axes=False)
+# A "down" origin:
+# radius 0
+diagram = tri_down_as_down((0, 0))
+# radius 1
+for pt in [(-1, 0), (1, 0),  (0, 1)]:
+    diagram += tri_up_as_down(pt)
+# radius sqrt(3)
+for pt in [(-1, -1), (1, -1), (-2, 0), (2, 0), (-1, 1), (1, 1)]:
+    diagram += tri_down_as_down(pt)
+# radius 2
+for pt in [(0, -1), (-2, 1), (2, 1)]:
+    diagram += tri_up_as_down(pt)
+show (diagram, axes=False)
 {% endhighlight %}
